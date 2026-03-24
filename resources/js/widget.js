@@ -33,6 +33,8 @@
     }
 
     let open = false
+    let mode = 'popup'
+    let dockedWidth = 375
 
     let chat = document.createElement('iframe')
     chat.src = frameEndpoint
@@ -44,7 +46,7 @@
     chat.style.height = chatHeight
     chat.style.border = 'none'
     chat.style.display = 'none'
-    
+
     let beacon = document.createElement('iframe')
     beacon.src = beaconEndpoint
     beacon.style.position = 'fixed'
@@ -54,6 +56,33 @@
     beacon.style.width = (config.beaconSize + 15) + 'px'
     beacon.style.height = (config.beaconSize + 15) + 'px'
     beacon.style.border = 'none'
+
+    const applyPopupPosition = () => {
+        beacon.style.display = ''
+        chat.style.position = 'fixed'
+        chat.style.bottom = isMobile ? '0' : '120px'
+        chat.style.right = isMobile ? '0' : '40px'
+        chat.style.top = ''
+        chat.style.width = chatWidth
+        chat.style.height = chatHeight
+        chat.style.display = open ? 'block' : 'none'
+        document.body.style.transition = ''
+        document.body.style.paddingRight = ''
+    }
+
+    const applyDockedPosition = () => {
+        beacon.style.display = 'none'
+        chat.style.position = 'fixed'
+        chat.style.top = '0'
+        chat.style.right = '0'
+        chat.style.bottom = '0'
+        chat.style.width = dockedWidth + 'px'
+        chat.style.height = '100%'
+        chat.style.display = 'block'
+        document.body.style.transition = 'padding-right 0.3s ease'
+        document.body.style.paddingRight = dockedWidth + 'px'
+        open = true
+    }
 
     const callChatMethod = (method, params) => {
         let message = {
@@ -82,13 +111,26 @@
     }
 
     const onToggle = () => {
+        if (mode === 'docked') {
+            if (open) {
+                chat.style.display = 'block'
+                document.body.style.paddingRight = dockedWidth + 'px'
+            } else {
+                // Closing from docked mode: undock and close
+                mode = 'popup'
+                document.body.style.paddingRight = ''
+                applyPopupPosition()
+                callChatMethod('botman-web-widget.chat.docked', { docked: false })
+            }
+        } else {
+            chat.style.display = open ? 'block' : 'none'
+        }
         relayMessageEvent({
             data: {
                 method: 'botman-web-widget.widget.toggle',
                 params: { open }
             }
         })
-        chat.style.display = open ? 'block' : 'none'
     }
 
     const botmanChatWidget = {
@@ -127,12 +169,27 @@
                 interactive,
                 attachment
             })
-        }
+        },
+        dock (width) {
+            dockedWidth = width || 375
+            mode = 'docked'
+            applyDockedPosition()
+            callChatMethod('botman-web-widget.chat.docked', { docked: true })
+        },
+        undock () {
+            mode = 'popup'
+            open = true
+            applyPopupPosition()
+            callChatMethod('botman-web-widget.chat.docked', { docked: false })
+        },
+        context (data) {
+            callChatMethod('botman-web-widget.chat.context', data)
+        },
     }
 
     const initClient = () => {
-        window.botmanChatWidget = botmanChatWidget 
-        
+        window.botmanChatWidget = botmanChatWidget
+
         if (config.openByDefault) {
             botmanChatWidget.open()
         }
@@ -148,6 +205,12 @@
         }
         if (event.data?.method === 'botman-web-widget.chat.close') {
             botmanChatWidget.close()
+        }
+        if (event.data?.method === 'botman-web-widget.chat.dock') {
+            botmanChatWidget.dock()
+        }
+        if (event.data?.method === 'botman-web-widget.chat.undock') {
+            botmanChatWidget.undock()
         }
         if (event.data?.method === 'botman-web-widget.chat.esc') {
             botmanChatWidget.close()

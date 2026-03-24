@@ -14,13 +14,14 @@ export const emitMessage = (method, params = {}) => {
 
 export const api = ({server = window.botmanWidget.chatServer, text, interactive = false, attachment = null, perMessageCallback, callback, errorHandler}) => {
     let data = new FormData()
-    
+
     const postData = {
         driver: 'web',
         userId: window.botmanWidget.userId,
         message: text,
         attachment: attachment,
         interactive: interactive ? '1' : '0',
+        context: JSON.stringify(window.botmanWidget.context || {}),
     }
 
     Object.keys(postData).forEach(key => data.append(key, postData[key]))
@@ -39,6 +40,7 @@ export const api = ({server = window.botmanWidget.chatServer, text, interactive 
 } 
 
 export const MessageTypes = {
+    ClientAction: 'client_action',
     TypingIndicator: 'typing_indicator',
     Text: 'text',
     List: 'list',

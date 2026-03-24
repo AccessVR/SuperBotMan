@@ -18,7 +18,12 @@ use Psr\Log\LoggerInterface;
 
 class ChatConversation extends Conversation
 {
+    use HasClientActions;
+    use PersistsConversation;
+
     protected string $chatInterfaceKey = DefaultChatInterface::class;
+
+    protected string $systemPrompt = 'You are a helpful assistant. You strive for brevity and clarity.';
 
     protected Collection $messages;
 
@@ -30,8 +35,6 @@ class ChatConversation extends Conversation
     {
         $this->messages = collect([]);
         $this->tools = collect([]);
-
-        $this->system('You are a helpful assistant. You strive for brevity and clarity.');
     }
 
     public static function make(?string $prompt = null): static
@@ -58,21 +61,13 @@ class ChatConversation extends Conversation
     }
 
     /**
-     * Set the system message for this conversation.
+     * Set the system prompt for this conversation.
      *
      * @return $this
      */
     public function system(string $content): self
     {
-        $this->messages = $this->messages->filter(function ($message) {
-            if ($message instanceof Message) {
-                return $message->role !== 'system';
-            } else {
-                return ! empty($message['role']) && $message['role'] !== 'system';
-            }
-        });
-
-        $this->messages->prepend(Message::system($content));
+        $this->systemPrompt = $content;
 
         return $this;
     }
@@ -110,18 +105,16 @@ class ChatConversation extends Conversation
 
     public function withCrawler(): self
     {
-        $crawler = new FunctionInfo(
-            'getContentsFromUrl',
-            $this,
-            'If the user provides a URL, you can use this function get get the contents of the URL.',
-            [new Parameter('url', 'string', 'The URL to crawl')]
-        );
-
-        if (! $this->tools->contains($crawler)) { // this probably doesn't work...
-            $this->tools->push($crawler);
+        if ($this->tools->contains(fn (FunctionInfo $tool) => $tool->name === 'getContentsFromUrl')) {
+            return $this;
         }
 
-        return $this->withTool($crawler);
+        return $this->withTool(new FunctionInfo(
+            'getContentsFromUrl',
+            $this,
+            'If the user provides a URL, you can use this function to get the contents of the URL.',
+            [new Parameter('url', 'string', 'The URL to crawl')]
+        ));
     }
 
     public function getContentsFromUrl(string $url): string
@@ -139,6 +132,10 @@ class ChatConversation extends Conversation
         $this->log($response);
 
         $this->assistant($response);
+
+        $this->saveToHistory();
+
+        $this->flushClientActions();
 
         if ($this->convertMarkdownToHtml) {
             if (! $converter = app(CommonMarkConverter::class)) {
@@ -191,20 +188,27 @@ class ChatConversation extends Conversation
      */
     protected function generateChatResponse(): string
     {
+        $chat = $this->chat();
+
+        // Set system prompt via setSystemMessage() for providers like Anthropic
+        // that require it as a top-level parameter, not inline in messages
+        if (method_exists($chat, 'setSystemMessage')) {
+            $chat->setSystemMessage($this->systemPrompt);
+        }
+
         $messages = collect($this->messages)->map(function ($message) {
             if ($message instanceof Message) {
                 return $message;
             }
 
             return match ($message['role']) {
-                'system' => Message::system($message['content']),
                 'user' => Message::user($message['content']),
                 'assistant' => Message::assistant($message['content']),
                 default => throw new \Exception('Invalid message role: '.$message['role'])
             };
-        })->toArray();
+        })->values()->toArray();
 
-        return $this->chat()->generateChat($messages);
+        return $chat->generateChat($messages);
     }
 
     public function run(): void
