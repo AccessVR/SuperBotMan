@@ -38,7 +38,11 @@ class SuperBotManServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
 
-        $this->bootAgentRoutes();
+        // Defer agent-route registration until after all providers
+        // have booted — host app providers (where SuperBotMan::registerAgent
+        // is typically called from) run AFTER auto-discovered package
+        // providers, so the registry is empty at this point.
+        $this->app->booted(fn () => $this->bootAgentRoutes());
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
