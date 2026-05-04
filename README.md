@@ -1,120 +1,189 @@
-# An SDK for building AI-backed chatbots with BotMan and Laravel
+# SuperBotMan
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/orchestratexr/botman-chat-sdk.svg?style=flat-square)](https://packagist.org/packages/orchestratexr/botman-chat-sdk)
-[![Total Downloads](https://img.shields.io/packagist/dt/orchestratexr/botman-chat-sdk.svg?style=flat-square)](https://packagist.org/packages/orchestratexr/botman-chat-sdk)
-[![License](https://img.shields.io/github/license/AccessVR/BotManChatSDK)](https://github.com/AccessVR/BotManChatSDK/blob/main/LICENSE)
-![GitHub Actions](https://github.com/AccessVR/BotManChatSDK/actions/workflows/build-assets.yml/badge.svg)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/orchestratexr/super-botman.svg?style=flat-square)](https://packagist.org/packages/orchestratexr/super-botman)
+[![License](https://img.shields.io/github/license/AccessVR/SuperBotMan)](https://github.com/AccessVR/SuperBotMan/blob/main/LICENSE.md)
 
-BotManChatSDK is a Laravel package designed for supporting the creation of LLM-backed Chat
-Bots using [BotMan](https://github.com/botman/botman), [LLPhant](https://github.com/LLPhant/LLPhant), 
-and LLM providers like OpenAI, Anthropic, and Ollama.
+A Laravel package that gives any host app a drop-in chat-widget UI plus a thin multi-channel adapter framework on top of the [Laravel AI SDK](https://github.com/laravel/ai).
 
-## About OrchestrateXR
+SuperBotMan is the evolution of the prior `orchestratexr/botman-chat-sdk` package. The widget UI carried over; the LLM back-end (previously a hand-rolled BotMan + LLPhant integration) has been replaced by `laravel/ai`. See [`CHANGELOG.md`](CHANGELOG.md) for the full break-down — anything BotMan- or LLPhant-related is gone.
 
-[OrchestrateXR](https://orchestratexr.com) is the easiest way to create and deploy XR content.
-Use your web browser to create for mobile, tablets, PCs and XR devices.
+## What you get
 
-## Roadmap
+- A bundled **Vue chat widget** (beacon + popup/docked iframe) that drops onto any Laravel page with one Blade directive.
+- A **`Channel`** abstraction so the same agent code can serve the Web widget today, and Slack / Discord / your-transport-of-choice tomorrow, without the agents needing to know.
+- An **`AgentRegistry`** so registering an agent and getting auto-mounted routes (POST endpoint, conversation list/show/delete) is three lines in your `AppServiceProvider`.
+- Built-in **IDOR enforcement** on conversation resume — the Laravel AI SDK does not enforce conversation ownership on `Agent::continue()`, so SuperBotMan does it for you.
+- A **CLI** (`php artisan super-botman:chat {slug}`) for testing a registered agent end-to-end without a browser, complete with `--continue` / `--conversation-id` / `--system` flags.
 
-* [x] Full compatability with existing [BotMan Drivers](https://botman.io/2.0/installation), and drop-in replacement for [BotMan Web Widget](https://botman.io/2.0/web-widget)
-* [x] Add the Web Widget into any Laravel application, including Laravel Nova, using `@botman` blade directive
-* [x] Base class `ChatConversation` for building LLM-backed [Conversations](https://botman.io/2.0/conversations)
-* [x] Extend Conversations to emulate Agents with [Tools](https://github.com/LLPhant/LLPhant?tab=readme-ov-file#tools) that execute PHP functions
-* [x] Built-in Tool for crawling URLs which you can bootstrap into any `ChatConversation` with `$conversation->withCrawler()`
-* [ ] Custom [Cache](https://botman.io/2.0/cache-drivers) driver for persisting Conversations between user sessions
-* [ ] Enhanced Web Driver to provide for real-time message streaming using Laravel event system
-* [ ] Discord Driver, to enable chat interactions in [Discord](https://discord.com/developers/docs/intro)
-* [ ] Chat Completion Driver, to enable chat requests and responses to take the form of [OpenAI Chat Completions](https://platform.openai.com/docs/api-reference/chat/create)
-* [ ] Examples of `ChatConversation` implementations, to help you start your journey
-* [x] Example `BotManChatServerController` for setting up the server-side of `ChatConversation` instances
-* [ ] Laravel Livewire Starter Kit bootstrapped with BotManChatSDK, perfect for deploying to [Laravel Cloud](https://cloud.laravel.com/)
+## What it isn't
 
-## Quickstart
-
-To be written:
-
-* Clone the starter kit repo
-* Add an environment variable
-* Run it locally using `php artisan serve`
+- **Not an LLM framework.** Agents, tools, providers, structured output, streaming — all of that is `laravel/ai`'s job. SuperBotMan is the integration shell around it.
+- **Not opinionated about persistence.** Conversation history lives in `laravel/ai`'s `agent_conversations` / `agent_conversation_messages` tables. SuperBotMan just exposes them through HTTP endpoints the widget understands.
+- **Not a multi-tenant agent marketplace.** It's a tool for the host app's own developers to wire up agents. There's no UI for end-users to register their own.
 
 ## Installation
 
-Install this Laravel package via composer into an existing Laravel project:
+```bash
+composer require orchestratexr/super-botman laravel/ai
+```
+
+Publish the package's config, views, and built JS/CSS assets, then run migrations:
 
 ```bash
-composer require orchestratexr/botman-chat-sdk
+php artisan vendor:publish --tag=super-botman-config
+php artisan vendor:publish --tag=super-botman-views
+php artisan vendor:publish --tag=super-botman-assets
+php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"
+php artisan migrate
 ```
 
-Publish front-end assets and configuration
+Add an Anthropic (or other Lab provider) key to your `.env`:
 
 ```bash
-php artisan vendor:publish --provider="OrchestrateXR\BotManChatSDK\BotManChatServiceProvider"
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Inject the chat client into your front-end using the `@botman` blade directive. For most Laravel applications,
-this means adding `@botman` to your blade layout. 
+## The 3-line host-app integration
 
-```html
-<html lang="en">
-  <body>
-    @slot
-    
-    {{!-- somewhere near the bottom --}}
-    @blade
-  </body>
-</html>
-```
-
-In Laravel Nova applications, you can safely add `@botman` to your `meta.php` file. 
-
-Create a web route for BotMan chat requests:
+Drop these in `AppServiceProvider::boot()`:
 
 ```php
-<?php
-// in your routes/web.php
-use OrchestrateXR\BotManChatSDK\Http\Controllers\BotManChatServerController;
-Route::post(BotManChat::config('chatServer'), [BotManChatServerController::class, 'listen']);
+use OrchestrateXR\SuperBotMan\Facades\SuperBotMan;
+use OrchestrateXR\SuperBotMan\Channels\WebChannel;
+
+SuperBotMan::registerAgent('chat', \App\Agents\ChatAgent::class)
+    ->channel(WebChannel::class);
 ```
 
-Lastly, if you are using all the defaults outlined above, you will need to create a
-Laravel environment variable to hold your [OpenAI API Key](https://platform.openai.com/api-keys):
+That auto-registers:
 
-```bash
-OPENAI_API_KEY=sk-proj-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+| Method | URL | Purpose |
+|---|---|---|
+| `POST` | `{mount}/chat` | Agent endpoint (the widget posts here) |
+| `GET` | `{mount}/chat/conversations` | List the current user's conversations |
+| `GET` | `{mount}/chat/conversations/{id}` | Fetch a conversation's messages (for resume) |
+| `DELETE` | `{mount}/chat/conversations/{id}` | Delete a conversation |
+
+`{mount}` defaults to `/chat` and is configurable in `config/super-botman.php`.
+
+Drop the widget onto any Blade page:
+
+```blade
+@superbotman
 ```
 
+Define your agent as a normal `laravel/ai` Agent class:
+
+```php
+namespace App\Agents;
+
+use Laravel\Ai\Attributes\Provider;
+use Laravel\Ai\Attributes\Model;
+use Laravel\Ai\Concerns\RemembersConversations;
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\Conversational;
+use Laravel\Ai\Enums\Lab;
+use Laravel\Ai\Promptable;
+
+#[Provider(Lab::Anthropic)]
+#[Model('claude-sonnet-4-5')]
+class ChatAgent implements Agent, Conversational
+{
+    use Promptable, RemembersConversations;
+
+    public function instructions(): string
+    {
+        return 'You are a helpful assistant.';
+    }
+}
+```
+
+## Customizing user identity
+
+Most apps will want to override how SuperBotMan identifies the visitor — for naming the echo channel, for scoping conversation history, and for telling `laravel/ai` which user owns the conversation. Extend the default configurator and bind your subclass:
+
+```php
+namespace App\Services;
+
+use OrchestrateXR\SuperBotMan\SuperBotManConfigurator;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Auth;
+
+class MyChat extends SuperBotManConfigurator
+{
+    public function agentUser(): Authenticatable
+    {
+        return Auth::user() ?? parent::agentUser();
+    }
+
+    public function isAnonymous(Authenticatable $user): bool
+    {
+        // E.g. for an app that authenticates everyone as a real user
+        // and uses an `is_anonymous` flag for the shared visitor account:
+        return $user->is_anonymous ?? parent::isAnonymous($user);
+    }
+}
+```
+
+```php
+// AppServiceProvider::register()
+$this->app->singleton(
+    \OrchestrateXR\SuperBotMan\Contracts\SuperBotManConfigurator::class,
+    fn ($app) => new \App\Services\MyChat($app),
+);
+```
+
+If your User model uses a non-standard primary key column, that's already handled — SuperBotMan wraps the user in a `ConversationParticipant` adapter before handing it to the SDK.
+
+## Anonymous visitors
+
+Two patterns are supported out of the box:
+
+1. **Your app already authenticates every visitor as a real `User` row** (e.g. an "Anonymous User" account that unauthenticated sessions get). Override `agentUser()` to return `Auth::user()` and you're done. SuperBotMan never touches its own anonymous table.
+2. **Your app has no anonymous-user concept.** The default configurator will get-or-create a row in `super_botman_anonymous_users` keyed by a session UUID and return that. When the visitor signs in, your app can run a "claim" step to reassign their `agent_conversations.user_id` from the anonymous row to the real user (helper to follow).
+
+The Laravel AI SDK requires `agent_conversations.user_id` to be non-null and reference a real Authenticatable; this design is the workaround.
+
+## Multi-channel
+
+The package ships only `WebChannel` today. To add Slack / Discord / etc., implement `OrchestrateXR\SuperBotMan\Contracts\Channel`:
+
+```php
+interface Channel
+{
+    public function inbound(Request $request): InboundMessage;
+    public function outbound(AgentRunResult $result, ClientActionBag $actions, InboundMessage $inbound): Response;
+    public function middleware(): array;            // ['web'], ['api', 'slack.signature'], ...
+    public function endpoints(): array;             // [['POST', '/']], or multi-endpoint
+    public function supportsConversationHistory(): bool;
+}
+```
+
+Then register an agent with that channel:
+
+```php
+SuperBotMan::registerAgent('support', \App\Agents\SupportAgent::class)
+    ->channel(\App\Channels\SlackChannel::class)
+    ->middleware(['slack.signature']);
+```
+
+The same agent code runs over either transport.
 
 ## Configuration
 
-You can configure the SDK by modifying your copy of `config/botman-chat-sdk.php`. It should
-have been generated when you published the assets for this Laravel package. If it does not or
-if you need to start over from scratch, just run this command:
+`config/super-botman.php` (after publishing) covers the widget's appearance + the route mount prefix. The agent registry — *which agents exist, what URL they live at, what channel serves them* — is populated by your code calling `SuperBotMan::registerAgent(...)`, not by config.
 
-```bash
-php artisan vendor:publish --tag=botman-chat-sdk-config --force
-```
-
-## Customization
-
-```php
-// Usage description here
-```
-
-### Testing
+## Testing
 
 ```bash
 composer test
 ```
 
-### Changelog
-
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
-
 ## Contributing
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+See [CONTRIBUTING](CONTRIBUTING.md).
 
-### Security
+## Security
 
 If you discover any security related issues, please email acollegeman@gmail.com instead of using the issue tracker.
 
@@ -125,8 +194,8 @@ If you discover any security related issues, please email acollegeman@gmail.com 
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+The MIT License (MIT). See [LICENSE](LICENSE.md).
 
-## Laravel Package Boilerplate
+## About OrchestrateXR
 
-This package was generated using the [Laravel Package Boilerplate](https://laravelpackageboilerplate.com).
+[OrchestrateXR](https://orchestratexr.com) is the easiest way to create and deploy XR content. Use your web browser to create for mobile, tablets, PCs and XR devices.
