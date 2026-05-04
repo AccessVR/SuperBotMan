@@ -3,7 +3,7 @@
         :class="[
             'flex flex-col bg-gray-100 border-gray-200 p-0 h-screen',
             {
-                'rounded-lg border': !$store.state.config.isMobile
+                'rounded-lg border': !$store.state.config.isMobile && !$store.state.docked
             }
         ]"
     >
@@ -56,6 +56,9 @@
                             {{ page.buttonDescription || page.description }}
                         </template>
                     </ChatPageButton>
+                    <ConversationList
+                        @resume="onResumeConversation"
+                    />
                     <!--
                     <ChatPageButton
                         @click="$store.state.page = 'ai'"
@@ -116,16 +119,16 @@
                 </div>
             </ChatPage>
 
-            <template 
+            <template
                 v-for="page in $store.state.config.pages"
             >
-                <ChatPage 
+                <ChatPage
                     :key="page.id"
                     :id="page.id"
                     v-if="$store.state.page === page.id"
                     :title="page.title"
                 >
-                    <ChatMessages 
+                    <ChatMessages
                         :pageId="page.id"
                         @message="onMessage"
                     />
@@ -186,6 +189,7 @@ import ChatMessages from './ChatMessages.vue'
 import ChatInput from './ChatInput.vue'
 import ChatPage from './ChatPage.vue'
 import ChatPageButton from './ChatPageButton.vue'
+import ConversationList from './ConversationList.vue'
 
 const store = useStore()
 const body = ref(null)
@@ -220,6 +224,20 @@ const say = (message, showMessage = true) => {
         ...message,
         ...{
             perMessageCallback: (message) => {
+                if (message.type === 'client_action') {
+                    if (message.action === 'setConversationId') {
+                        store.commit('conversationId', {
+                            pageId,
+                            conversationId: message.payload.id,
+                        })
+                        return
+                    }
+                    emitMessage('chat.clientAction', {
+                        action: message.action,
+                        payload: message.payload,
+                    })
+                    return
+                }
                 writeToMessages({
                     ...message,
                     ...{
@@ -227,7 +245,7 @@ const say = (message, showMessage = true) => {
                         timeout: timeout += (message.timeout || 0),
                     }
                 }, pageId)
-            }, 
+            },
             callback: (response) => {
                 clearTimeout(waitBeforeChangingLoadingState)
                 store.commit('loading', false)
@@ -269,6 +287,7 @@ const onBack = () => {
 }
 
 const onPageButtonClick = (pageId) => {
+    store.commit('clearConversation', pageId)
     store.commit('page', pageId)
 }
 
@@ -279,11 +298,42 @@ const onChatInputSubmit = (message) => {
     }
 }
 
-const onMessage = (message, $el) => {
-    console.log(message)
-    nextTick(() => {
-        body.value.$el.scrollTop = $el.scrollTop + 100
+const onMessage = () => {
+    // Scrolling is handled by ChatBody's MutationObserver
+}
+
+const onResumeConversation = (conversation) => {
+    const pageId = conversation.page_id || store.state.config.pages[0]?.id || 'chat'
+    const page = store.state.config.pages.find(p => p.id === pageId)
+
+    if (!page) {
+        console.error('No matching page for conversation', conversation)
+        return
+    }
+
+    store.commit('clearConversation', pageId)
+
+    if (page.introMessage) {
+        writeToMessages({
+            text: page.introMessage,
+            from: 'chatbot',
+        }, pageId)
+    }
+
+    conversation.messages.forEach(msg => {
+        writeToMessages({
+            text: msg.content,
+            from: msg.role === 'user' ? 'visitor' : 'chatbot',
+            time: msg.created_at ? new Date(msg.created_at).getTime() : null,
+        }, pageId)
     })
+
+    store.commit('conversationId', {
+        pageId,
+        conversationId: conversation.id,
+    })
+    store.commit('pristine', { pageId, value: false })
+    store.commit('page', pageId)
 }
 
 document.addEventListener('keydown', (event) => {
@@ -293,10 +343,10 @@ document.addEventListener('keydown', (event) => {
 })
 
 window.addEventListener('message', (event) => {
-    if (event.data?.method === 'botman-web-widget.widget.toggle') {
-        $store.state.open = event.data.params.open
+    if (event.data?.method === 'super-botman.widget.toggle') {
+        store.state.open = event.data.params.open
     }
-    if (event.data?.method === 'botman-web-widget.chat.api') {
+    if (event.data?.method === 'super-botman.chat.api') {
         api({ ...event.data.params, ...{
             callback: (data) => {
                 emitMessage('chat.api.response', data)
@@ -311,20 +361,26 @@ window.addEventListener('message', (event) => {
             }
         }})
     }
-    if (event.data?.method === 'botman-web-widget.chat.sayAsBot') {
+    if (event.data?.method === 'super-botman.chat.sayAsBot') {
         sayAsBot(event.data.params)
     }
-    if (event.data?.method === 'botman-web-widget.chat.whisper') {
+    if (event.data?.method === 'super-botman.chat.whisper') {
         whisper(event.data.params)
     }
-    if (event.data?.method === 'botman-web-widget.chat.say') {
+    if (event.data?.method === 'super-botman.chat.say') {
         say(event.data.params)
     }
-    if (event.data?.method === 'botman-web-widget.chat.page') {
+    if (event.data?.method === 'super-botman.chat.page') {
         store.commit('page', event.data.params.id)
     }
-    if (event.data?.method === 'botman-web-widget.chat.writeToMessages') {
+    if (event.data?.method === 'super-botman.chat.writeToMessages') {
         writeToMessages(event.data.params)
+    }
+    if (event.data?.method === 'super-botman.chat.docked') {
+        store.commit('docked', event.data.params.docked)
+    }
+    if (event.data?.method === 'super-botman.chat.context') {
+        store.commit('context', event.data.params)
     }
 })
 </script>

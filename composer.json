@@ -1,17 +1,16 @@
 {
-    "name": "orchestratexr/botman-chat-sdk",
-    "version": "0.0.20",
-    "description": "",
+    "name": "orchestratexr/super-botman",
+    "version": "0.1.0",
+    "description": "Drop-in chat-widget UI and multi-channel adapter framework on top of the Laravel AI SDK.",
     "keywords": [
-        "botman",
-        "chat",
-        "sdk",
-        "php",
         "laravel",
-        "llphant",
-        "openai"
+        "agent",
+        "ai",
+        "chat",
+        "widget",
+        "vue"
     ],
-    "homepage": "https://github.com/AccessVR/BotManChatSDK",
+    "homepage": "https://github.com/AccessVR/SuperBotMan",
     "license": "MIT",
     "type": "library",
     "authors": [
@@ -25,27 +24,23 @@
         }
     ],
     "require": {
-        "php": "^8.2",
-        "botman/botman": "^2.8",
-        "botman/driver-web": "^1.5",
-        "illuminate/broadcasting": "^10.0|^11.0|^12.0",
-        "illuminate/contracts": "^10.0|^11.0|^12.0",
-        "illuminate/events": "^10.0|^11.0|^12.0",
-        "illuminate/http": "^10.0|^11.0|^12.0",
-        "illuminate/queue": "^10.0|^11.0|^12.0",
-        "illuminate/support": "^10.0|^11.0|^12.0",
-        "illuminate/view": "^10.0|^11.0|^12.0",
-        "league/commonmark": "^2.6",
-        "theodo-group/llphant": "^0.11.0"
+        "php": "^8.3",
+        "illuminate/auth": "^11.0|^12.0",
+        "illuminate/contracts": "^11.0|^12.0",
+        "illuminate/database": "^11.0|^12.0",
+        "illuminate/http": "^11.0|^12.0",
+        "illuminate/routing": "^11.0|^12.0",
+        "illuminate/support": "^11.0|^12.0",
+        "illuminate/view": "^11.0|^12.0"
     },
     "autoload": {
         "psr-4": {
-            "OrchestrateXR\\BotManChatSDK\\": "src"
+            "OrchestrateXR\\SuperBotMan\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "OrchestrateXR\\BotManChatSDK\\Tests\\": "tests"
+            "OrchestrateXR\\SuperBotMan\\Tests\\": "tests"
         }
     },
     "scripts": {
@@ -53,18 +48,15 @@
         "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
     },
     "config": {
-        "sort-packages": true,
-        "allow-plugins": {
-            "php-http/discovery": true
-        }
+        "sort-packages": true
     },
     "extra": {
         "laravel": {
             "providers": [
-                "OrchestrateXR\\BotManChatSDK\\BotManChatServiceProvider"
+                "OrchestrateXR\\SuperBotMan\\SuperBotManServiceProvider"
             ],
             "aliases": {
-                "BotManChat": "OrchestrateXR\\BotManChatSDK\\BotManChat"
+                "SuperBotMan": "OrchestrateXR\\SuperBotMan\\Facades\\SuperBotMan"
             }
         }
     }

@@ -1,20 +1,24 @@
 <?php
 
 /**
- * You can place your custom package configuration in here.
+ * SuperBotMan widget + agent registry configuration. Published as
+ * `config/super-botman.php` via:
+ *
+ *   php artisan vendor:publish --tag=super-botman-config
  */
 
-use OrchestrateXR\BotManChatSDK\Events\BotManMessageCreated;
-
 return [
-    // The URL of the BotMan route / server to use.
-    'chatServer' => '/botman',
+    // The route prefix under which SuperBotMan auto-mounts agent
+    // endpoints. Each registered agent gets a slug appended:
+    // POST {mount}/{slug}, plus conversation history routes when the
+    // channel supports them.
+    'mount' => '/super-botman',
 
-    // The location of your chat frame URL / route.
-    'frameEndpoint' => '/botman/chat',
+    // The location of the chat frame URL.
+    'frameEndpoint' => '/super-botman/chat',
 
-    // The location of your chat beacon URL / route.
-    'beaconEndpoint' => '/botman/beacon',
+    // The location of the chat beacon URL.
+    'beaconEndpoint' => '/super-botman/beacon',
 
     // Time format to use.
     'timeFormat' => 'HH:MM',
@@ -23,15 +27,15 @@ return [
     'dateTimeFormat' => 'm/d/yy HH:MM',
 
     // The title to use in the widget.
-    'title' => env('BOTMAN_WIDGET_TITLE', env('APP_NAME', 'BotMan Widget')),
+    'title' => env('SUPER_BOTMAN_WIDGET_TITLE', env('APP_NAME', 'SuperBotMan')),
 
-    // Whether the chat widget should be opened automatically when the page loads
+    // Whether the chat widget should open automatically when the page loads.
     'openByDefault' => true,
 
-    // The default chat page to open when the widget is opened
+    // The default chat page to open when the widget is opened.
     'defaultPage' => 'home',
 
-    // This is a welcome message that every new user sees when the widget is opened for the first time.
+    // Welcome message every new user sees when the widget is first opened.
     'introMessage' => null,
 
     // Input placeholder text.
@@ -67,7 +71,7 @@ return [
     // The color to use for the beacon badge when hovered.
     'beaconColorHover' => '#2b7fff',
 
-    // The label color for the beacon
+    // The label color for the beacon.
     'beaconLabelColor' => '#ffffff',
 
     // Height to use for embedded videos.
@@ -77,20 +81,8 @@ return [
     'beaconSize' => 60,
 
     // Link used for the "about" section in the widget footer.
-    'aboutLink' => 'https://github.com/AccessVR/BotManChatSDK',
+    'aboutLink' => 'https://github.com/AccessVR/SuperBotMan',
 
     // Text used for the "about" section in the widget footer.
-    'aboutText' => 'Powered by BotMan',
-
-    // Use Laravel Echo to listen for BotManMessageCreated events
-    'useEcho' => false,
-
-    // The channel to listen for BotManMessageCreated events on
-    'echoChannel' => 'botman.messages.$userId',
-
-    // Laravel Echo configuration @see https://laravel.com/docs/11.x/broadcasting
-    'echoConfiguration' => [],
-
-    // The event class that will be used for broadcasting BotMan messages
-    'echoEventClass' => BotManMessageCreated::class,
+    'aboutText' => 'Powered by SuperBotMan',
 ];

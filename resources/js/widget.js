@@ -2,7 +2,7 @@
 
     const isMobile = window.screen.width < 640
 
-    let config = window.botmanWidget
+    let config = window.superbotmanWidget
 
     let chatWidth = new String(isMobile ? config.mobileWidth : config.desktopWidth)
     if (chatWidth.indexOf('%') === -1) {
@@ -33,6 +33,8 @@
     }
 
     let open = false
+    let mode = 'popup'
+    let dockedWidth = 375
 
     let chat = document.createElement('iframe')
     chat.src = frameEndpoint
@@ -44,7 +46,7 @@
     chat.style.height = chatHeight
     chat.style.border = 'none'
     chat.style.display = 'none'
-    
+
     let beacon = document.createElement('iframe')
     beacon.src = beaconEndpoint
     beacon.style.position = 'fixed'
@@ -54,6 +56,33 @@
     beacon.style.width = (config.beaconSize + 15) + 'px'
     beacon.style.height = (config.beaconSize + 15) + 'px'
     beacon.style.border = 'none'
+
+    const applyPopupPosition = () => {
+        beacon.style.display = ''
+        chat.style.position = 'fixed'
+        chat.style.bottom = isMobile ? '0' : '120px'
+        chat.style.right = isMobile ? '0' : '40px'
+        chat.style.top = ''
+        chat.style.width = chatWidth
+        chat.style.height = chatHeight
+        chat.style.display = open ? 'block' : 'none'
+        document.body.style.transition = ''
+        document.body.style.paddingRight = ''
+    }
+
+    const applyDockedPosition = () => {
+        beacon.style.display = 'none'
+        chat.style.position = 'fixed'
+        chat.style.top = '0'
+        chat.style.right = '0'
+        chat.style.bottom = '0'
+        chat.style.width = dockedWidth + 'px'
+        chat.style.height = '100%'
+        chat.style.display = 'block'
+        document.body.style.transition = 'padding-right 0.3s ease'
+        document.body.style.paddingRight = dockedWidth + 'px'
+        open = true
+    }
 
     const callChatMethod = (method, params) => {
         let message = {
@@ -73,25 +102,38 @@
     }
 
     const relayMessageEvent = (event) => {
-        if (event.data.method?.indexOf('botman-web-widget.chat.') !== -1) {
+        if (event.data.method?.indexOf('super-botman.chat.') !== -1) {
             callBeaconMethod(event.data.method, event.data.params)
         }
-        if (event.data.method?.indexOf('botman-web-widget.beacon.') !== -1) {
+        if (event.data.method?.indexOf('super-botman.beacon.') !== -1) {
             callChatMethod(event.data.method, event.data.params)
         }
     }
 
     const onToggle = () => {
+        if (mode === 'docked') {
+            if (open) {
+                chat.style.display = 'block'
+                document.body.style.paddingRight = dockedWidth + 'px'
+            } else {
+                // Closing from docked mode: undock and close
+                mode = 'popup'
+                document.body.style.paddingRight = ''
+                applyPopupPosition()
+                callChatMethod('super-botman.chat.docked', { docked: false })
+            }
+        } else {
+            chat.style.display = open ? 'block' : 'none'
+        }
         relayMessageEvent({
             data: {
-                method: 'botman-web-widget.widget.toggle',
+                method: 'super-botman.widget.toggle',
                 params: { open }
             }
         })
-        chat.style.display = open ? 'block' : 'none'
     }
 
-    const botmanChatWidget = {
+    const superbotmanChatWidget = {
         open () {
             open = true
             onToggle()
@@ -105,60 +147,81 @@
             onToggle()
         },
         say (message) {
-            callChatMethod('botman-web-widget.chat.say', typeof message !== 'object' ? { text: message } : message)
+            callChatMethod('super-botman.chat.say', typeof message !== 'object' ? { text: message } : message)
         },
         writeToMessages (message) {
-            callChatMethod('botman-web-widget.chat.writeToMessages',  typeof message !== 'object' ? { text: message } : message)
+            callChatMethod('super-botman.chat.writeToMessages',  typeof message !== 'object' ? { text: message } : message)
         },
         whisper (message) {
-            callChatMethod('botman-web-widget.chat.whisper',  typeof message !== 'object' ? { text: message } : message)
+            callChatMethod('super-botman.chat.whisper',  typeof message !== 'object' ? { text: message } : message)
         },
         sayAsBot (message) {
-            callChatMethod('botman-web-widget.chat.sayAsBot',  typeof message !== 'object' ? { text: message } : message)
+            callChatMethod('super-botman.chat.sayAsBot',  typeof message !== 'object' ? { text: message } : message)
         },
         page (id) {
-            callChatMethod('botman-web-widget.chat.page', {
+            callChatMethod('super-botman.chat.page', {
                 id
             })
         },
         api (text, interactive = false, attachment = null) {
-            callChatMethod('botman-web-widget.chat.api', typeof text === 'object' ? text : {
+            callChatMethod('super-botman.chat.api', typeof text === 'object' ? text : {
                 text,
                 interactive,
                 attachment
             })
-        }
+        },
+        dock (width) {
+            dockedWidth = width || 375
+            mode = 'docked'
+            applyDockedPosition()
+            callChatMethod('super-botman.chat.docked', { docked: true })
+        },
+        undock () {
+            mode = 'popup'
+            open = true
+            applyPopupPosition()
+            callChatMethod('super-botman.chat.docked', { docked: false })
+        },
+        context (data) {
+            callChatMethod('super-botman.chat.context', data)
+        },
     }
 
     const initClient = () => {
-        window.botmanChatWidget = botmanChatWidget 
-        
+        window.superbotmanChatWidget = superbotmanChatWidget
+
         if (config.openByDefault) {
-            botmanChatWidget.open()
+            superbotmanChatWidget.open()
         }
     }
 
     window.addEventListener('message', (event) => {
         relayMessageEvent(event)
-        if (event.data?.method === 'botman-web-widget.chat.init') {
+        if (event.data?.method === 'super-botman.chat.init') {
             initClient()
         }
-        if (event.data?.method === 'botman-web-widget.beacon.click') {
-            botmanChatWidget.toggle()
+        if (event.data?.method === 'super-botman.beacon.click') {
+            superbotmanChatWidget.toggle()
         }
-        if (event.data?.method === 'botman-web-widget.chat.close') {
-            botmanChatWidget.close()
+        if (event.data?.method === 'super-botman.chat.close') {
+            superbotmanChatWidget.close()
         }
-        if (event.data?.method === 'botman-web-widget.chat.esc') {
-            botmanChatWidget.close()
+        if (event.data?.method === 'super-botman.chat.dock') {
+            superbotmanChatWidget.dock()
         }
-        if (event.data?.method === 'botman-web-widget.beacon.esc') {
-            botmanChatWidget.close()
+        if (event.data?.method === 'super-botman.chat.undock') {
+            superbotmanChatWidget.undock()
         }
-        if (event.data?.method === 'botman-web-widget.chat.api.response') {
+        if (event.data?.method === 'super-botman.chat.esc') {
+            superbotmanChatWidget.close()
+        }
+        if (event.data?.method === 'super-botman.beacon.esc') {
+            superbotmanChatWidget.close()
+        }
+        if (event.data?.method === 'super-botman.chat.api.response') {
             console.log(event.data.params)
         }
-        if (event.data?.method === 'botman-web-widget.chat.api.error') {
+        if (event.data?.method === 'super-botman.chat.api.error') {
             console.log(event.data.params)
         }
     })

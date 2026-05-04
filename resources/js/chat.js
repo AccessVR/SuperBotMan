@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 const app = createApp(Chat)
 
-const config = window.botmanWidget
+const config = window.superbotmanWidget
 
 // add default page
 if (!config.pages?.length) {
@@ -28,10 +28,14 @@ const store = createStore({
     state: {
         config,
         open: false,
+        docked: false,
+        context: {},
         title: null,
         page: null,
         messages: config.pages.reduce((messages, page) => { messages[page.id] = []; return messages }, {}),
         conversation: null,
+        conversationId: {},
+        conversations: {},
         input: {
             text: '',
             attachment: null,
@@ -65,6 +69,10 @@ const store = createStore({
         },
         page(state, pageId) {
             state.page = pageId
+            if (pageId !== 'home') {
+                state.context = { ...state.context, pageId }
+                window.superbotmanWidget.context = { ...window.superbotmanWidget.context, pageId }
+            }
             const page = state.config.pages.find(page => page.id === pageId)
             if (page?.pristine) {
                 page.pristine = false
@@ -96,6 +104,32 @@ const store = createStore({
         },
         error(state, value) {
             state.error = value
+        },
+        docked(state, value) {
+            state.docked = value
+        },
+        context(state, data) {
+            state.context = data
+            window.superbotmanWidget.context = data
+        },
+        conversationId(state, { pageId, conversationId }) {
+            state.conversationId[pageId] = conversationId
+            state.context = { ...state.context, conversationId }
+            window.superbotmanWidget.context = { ...window.superbotmanWidget.context, conversationId }
+        },
+        conversations(state, { pageId, conversations }) {
+            state.conversations[pageId] = conversations
+        },
+        clearConversation(state, pageId) {
+            state.messages[pageId] = []
+            state.conversationId[pageId] = null
+            const { conversationId, ...rest } = state.context
+            state.context = rest
+            window.superbotmanWidget.context = { ...rest }
+            const page = state.config.pages.find(p => p.id === pageId)
+            if (page) {
+                page.pristine = true
+            }
         },
     },
 })
