@@ -1,50 +1,61 @@
 <?php
 
-namespace OrchestrateXR\BotManChatSDK;
+namespace OrchestrateXR\SuperBotMan;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
-use OrchestrateXR\BotManChatSDK\Contracts\BotManChatConfigurator as BotManChatConfiguratorContract;
+use OrchestrateXR\SuperBotMan\Contracts\SuperBotManConfigurator as SuperBotManConfiguratorContract;
+use OrchestrateXR\SuperBotMan\Models\AnonymousAgentUser;
 
-class BotManChatConfigurator implements BotManChatConfiguratorContract
+class SuperBotManConfigurator implements SuperBotManConfiguratorContract
 {
     protected Application $app;
 
-    protected array $config;
+    protected array $config = [];
 
     public function __construct(Application $app)
     {
         $this->app = $app;
     }
 
-    public function echoChannel(): string
-    {
-        $echoChannelConfig = data_get($this->config(), 'echoChannel');
-
-        return str_replace('$userId', $this->userId(), $echoChannelConfig);
-    }
-
-    public function echoEventName(): string
-    {
-        return basename(data_get($this->config(), 'echoEventClass'));
-    }
-
     public function userId(): string
     {
-        return Auth::id() ?? Str::uuid();
+        if ($id = Auth::id()) {
+            return (string) $id;
+        }
+
+        return $this->anonymousSessionToken();
     }
 
-    /**
-     * Get the evaluated view contents for the given view.
-     *
-     * @param  string|null  $view
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
-     * @param  array  $mergeData
-     */
-    public function view($view = null, $data = [], $mergeData = []): View|ViewFactory
+    public function agentUser(): Authenticatable
+    {
+        if ($user = Auth::user()) {
+            return $user;
+        }
+
+        return AnonymousAgentUser::firstOrCreate(
+            ['session_token' => $this->anonymousSessionToken()],
+            ['last_seen_at' => now()],
+        );
+    }
+
+    protected function anonymousSessionToken(): string
+    {
+        $key = 'super_botman_session_token';
+
+        if (! Session::has($key)) {
+            Session::put($key, (string) Str::uuid());
+        }
+
+        return Session::get($key);
+    }
+
+    public function view(?string $view = null, $data = [], array $mergeData = []): View|ViewFactory
     {
         $factory = $this->app->make(ViewFactory::class);
 
@@ -52,27 +63,25 @@ class BotManChatConfigurator implements BotManChatConfiguratorContract
             return $factory;
         }
 
-        return $factory->make('botman-chat-sdk::'.$view, $data, $mergeData);
+        return $factory->make('super-botman::'.$view, $data, $mergeData);
     }
 
-    protected function render($view, $data = [], $mergeData = []): string
+    protected function render(string $view, array $data = [], array $mergeData = []): string
     {
         return $this->view($view, $data, $mergeData)->render();
     }
 
-    public function getClientConfig(array $config = []): array
+    public function getClientConfig(array $overrides = []): array
     {
         return array_merge($this->config(), [
-            'userId' => self::userId(),
-            'echoChannel' => self::echoChannel(),
-            'echoEventName' => self::echoEventName(),
-        ], $config);
+            'userId' => $this->userId(),
+        ], $overrides);
     }
 
-    public function config($name = null, $value = null): mixed
+    public function config(mixed $name = null, mixed $value = null): mixed
     {
         if (empty($this->config)) {
-            $config = config('botman-chat-sdk');
+            $config = config('super-botman');
 
             $this->config = array_merge([
                 'icons' => [
@@ -121,30 +130,36 @@ class BotManChatConfigurator implements BotManChatConfiguratorContract
 
     public function widget(): string
     {
-        return $this->render('widget', ['config' => $this->config]);
+        return $this->render('widget', ['config' => $this->config()]);
     }
 
-    public function asset($path): string
+    public function asset(string $path): string
     {
         return $this->hotAsset($path) ?: $this->buildAsset($path);
     }
 
-    protected function buildAsset($path): string
+    protected function buildAsset(string $path): string
     {
-        $manifest = $this->app->publicPath('vendor/botman-chat-sdk/manifest.json');
-        if (file_exists($manifest)) {
-            $manifest = json_decode(file_get_contents($manifest), true);
-            $asset = $manifest[$path];
+        $manifest = $this->app->publicPath('vendor/super-botman/manifest.json');
 
-            // TODO: don't rely on this helper function
-            return asset('vendor/botman-chat-sdk/'.$asset['file']);
+        if (! file_exists($manifest)) {
+            throw new \RuntimeException('SuperBotMan asset manifest not found; run `php artisan vendor:publish --tag=super-botman-assets` to generate it.');
         }
-        throw new \Exception('BotMan Chat SDK Manifest file not found; run `php artisan vendor:publish --tag=botman-chat-sdk-assets` to generate it.');
+
+        $manifest = json_decode(file_get_contents($manifest), true);
+        $asset = $manifest[$path] ?? null;
+
+        if (! $asset) {
+            throw new \RuntimeException("Asset '{$path}' not found in SuperBotMan manifest.");
+        }
+
+        return asset('vendor/super-botman/'.$asset['file']);
     }
 
-    protected function hotAsset($path): string
+    protected function hotAsset(string $path): string|false
     {
         $hot = __DIR__.'/../public/hot';
+
         if (file_exists($hot)) {
             return file_get_contents($hot).'/'.ltrim($path, '/');
         }

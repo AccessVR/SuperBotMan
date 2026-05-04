@@ -343,10 +343,10 @@ document.addEventListener('keydown', (event) => {
 })
 
 window.addEventListener('message', (event) => {
-    if (event.data?.method === 'botman-web-widget.widget.toggle') {
+    if (event.data?.method === 'super-botman.widget.toggle') {
         store.state.open = event.data.params.open
     }
-    if (event.data?.method === 'botman-web-widget.chat.api') {
+    if (event.data?.method === 'super-botman.chat.api') {
         api({ ...event.data.params, ...{
             callback: (data) => {
                 emitMessage('chat.api.response', data)
@@ -361,25 +361,25 @@ window.addEventListener('message', (event) => {
             }
         }})
     }
-    if (event.data?.method === 'botman-web-widget.chat.sayAsBot') {
+    if (event.data?.method === 'super-botman.chat.sayAsBot') {
         sayAsBot(event.data.params)
     }
-    if (event.data?.method === 'botman-web-widget.chat.whisper') {
+    if (event.data?.method === 'super-botman.chat.whisper') {
         whisper(event.data.params)
     }
-    if (event.data?.method === 'botman-web-widget.chat.say') {
+    if (event.data?.method === 'super-botman.chat.say') {
         say(event.data.params)
     }
-    if (event.data?.method === 'botman-web-widget.chat.page') {
+    if (event.data?.method === 'super-botman.chat.page') {
         store.commit('page', event.data.params.id)
     }
-    if (event.data?.method === 'botman-web-widget.chat.writeToMessages') {
+    if (event.data?.method === 'super-botman.chat.writeToMessages') {
         writeToMessages(event.data.params)
     }
-    if (event.data?.method === 'botman-web-widget.chat.docked') {
+    if (event.data?.method === 'super-botman.chat.docked') {
         store.commit('docked', event.data.params.docked)
     }
-    if (event.data?.method === 'botman-web-widget.chat.context') {
+    if (event.data?.method === 'super-botman.chat.context') {
         store.commit('context', event.data.params)
     }
 })

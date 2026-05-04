@@ -6,7 +6,7 @@ const app = createApp(Beacon)
 
 const store = createStore({
     state: {
-        config: window.botmanWidget,
+        config: window.superbotmanWidget,
         open: false,
     },
     mutations: {

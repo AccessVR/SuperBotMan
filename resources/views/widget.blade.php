@@ -1,4 +1,4 @@
 <script>
-    window.botmanWidget = @json($config)
+    window.superbotmanWidget = @json($config)
 </script>
-<script src="{{ BotManChat::asset('resources/js/widget.js') }}"></script>
+<script src="{{ \OrchestrateXR\SuperBotMan\Facades\SuperBotMan::asset('resources/js/widget.js') }}"></script>

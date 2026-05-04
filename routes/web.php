@@ -1,19 +1,18 @@
 <?php
 
 use Illuminate\Http\Request;
-use OrchestrateXR\BotManChatSDK\BotManChat;
-use OrchestrateXR\BotManChatSDK\Http\Controllers\ConversationHistoryController;
+use OrchestrateXR\SuperBotMan\Facades\SuperBotMan;
 
 Route::middleware('web')->group(function () {
-    Route::get(BotManChat::config('frameEndpoint'), function (Request $request) {
-        return BotManChat::view('chat', ['config' => ['isMobile' => $request->isMobile]]);
-    })->name('botman-web-widget.chat');
+    Route::get(SuperBotMan::config('frameEndpoint'), function (Request $request) {
+        return SuperBotMan::view('chat', ['config' => ['isMobile' => $request->isMobile]]);
+    })->name('super-botman.chat');
 
-    Route::get(BotManChat::config('beaconEndpoint'), function (Request $request) {
-        return BotManChat::view('beacon', ['config' => ['isMobile' => $request->isMobile]]);
-    })->name('botman-web-widget.beacon');
+    Route::get(SuperBotMan::config('beaconEndpoint'), function (Request $request) {
+        return SuperBotMan::view('beacon', ['config' => ['isMobile' => $request->isMobile]]);
+    })->name('super-botman.beacon');
 
-    Route::get('/botman/conversations', [ConversationHistoryController::class, 'index']);
-    Route::get('/botman/conversations/{id}', [ConversationHistoryController::class, 'show']);
-    Route::delete('/botman/conversations/{id}', [ConversationHistoryController::class, 'destroy']);
+    // Agent endpoint routes and conversation-history routes are
+    // registered by SuperBotManServiceProvider after the agent
+    // registry has been populated. Added in commit 2.
 });

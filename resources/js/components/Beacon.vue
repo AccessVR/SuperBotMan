@@ -15,7 +15,7 @@
 import { ref, computed } from 'vue'
 import { emitMessage } from '../utils'
 
-let config = ref(window.botmanWidget)
+let config = ref(window.superbotmanWidget)
 
 let style = computed(() => {
     return {
@@ -30,7 +30,7 @@ let toggleChat = () => {
 }
 
 window.addEventListener('message', (event) => {
-    if (event.data?.method === 'botman-web-widget.widget.toggle') {
+    if (event.data?.method === 'super-botman.widget.toggle') {
         $store.state.open = event.data.params.open
     }
 })

@@ -7,21 +7,20 @@ export const client = () => {
 
 export const emitMessage = (method, params = {}) => {
     window.parent.postMessage({
-        method: 'botman-web-widget.' + method,
+        method: 'super-botman.' + method,
         params
     })
 }
 
-export const api = ({server = window.botmanWidget.chatServer, text, interactive = false, attachment = null, perMessageCallback, callback, errorHandler}) => {
+export const api = ({server = window.superbotmanWidget.chatServer, text, interactive = false, attachment = null, perMessageCallback, callback, errorHandler}) => {
     let data = new FormData()
 
     const postData = {
-        driver: 'web',
-        userId: window.botmanWidget.userId,
+        userId: window.superbotmanWidget.userId,
         message: text,
         attachment: attachment,
         interactive: interactive ? '1' : '0',
-        context: JSON.stringify(window.botmanWidget.context || {}),
+        context: JSON.stringify(window.superbotmanWidget.context || {}),
     }
 
     Object.keys(postData).forEach(key => data.append(key, postData[key]))

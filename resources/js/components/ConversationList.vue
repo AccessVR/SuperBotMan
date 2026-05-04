@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useStore } from 'vuex'
 import { client } from '../utils'
 
@@ -45,6 +45,17 @@ const emit = defineEmits(['resume'])
 const store = useStore()
 const conversations = ref([])
 
+// Per-page conversations endpoint, falling back to the widget-level
+// default. The host app supplies this via the registered agent's
+// channel — there's no hardcoded "/botman/conversations" anymore.
+const conversationsEndpoint = computed(() => {
+    const pageId = store.state.page
+    const page = store.state.config.pages?.find(p => p.id === pageId)
+    return page?.conversationsEndpoint
+        || store.state.config.conversationsEndpoint
+        || null
+})
+
 watch(() => store.state.page, (newPage) => {
     if (newPage === 'home') {
         fetchConversations()
@@ -52,9 +63,12 @@ watch(() => store.state.page, (newPage) => {
 })
 
 const fetchConversations = async () => {
+    if (!conversationsEndpoint.value) {
+        conversations.value = []
+        return
+    }
     try {
-        const response = await client().get('/botman/conversations', {
-        })
+        const response = await client().get(conversationsEndpoint.value)
         conversations.value = response.data
     } catch (e) {
         console.error('Failed to fetch conversations', e)
@@ -62,9 +76,9 @@ const fetchConversations = async () => {
 }
 
 const resumeConversation = async (id) => {
+    if (!conversationsEndpoint.value) return
     try {
-        const response = await client().get(`/botman/conversations/${id}`, {
-        })
+        const response = await client().get(`${conversationsEndpoint.value}/${id}`)
         emit('resume', response.data)
     } catch (e) {
         console.error('Failed to load conversation', e)
@@ -72,9 +86,9 @@ const resumeConversation = async (id) => {
 }
 
 const deleteConversation = async (id) => {
+    if (!conversationsEndpoint.value) return
     try {
-        await client().delete(`/botman/conversations/${id}`, {
-        })
+        await client().delete(`${conversationsEndpoint.value}/${id}`)
         conversations.value = conversations.value.filter(c => c.id !== id)
     } catch (e) {
         console.error('Failed to delete conversation', e)
