@@ -3,19 +3,22 @@
 namespace OrchestrateXR\SuperBotMan\Dispatchers;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Responses\AgentResponse;
 use OrchestrateXR\SuperBotMan\AgentRunResult;
 use OrchestrateXR\SuperBotMan\Contracts\AgentDispatcher;
 
 /**
  * Default dispatcher backed by the official Laravel AI SDK
- * (laravel/ai). Imports from the SDK are resolved via the global
- * namespace on each call so this class can be instantiated even when
- * the SDK isn't installed (host apps that bind their own dispatcher
- * needn't pull laravel/ai).
+ * (laravel/ai). The SDK's API: agent classes implement
+ * Laravel\Ai\Contracts\Agent (typically via the Promptable trait,
+ * plus RemembersConversations for chat history). The conversation
+ * methods forUser($user) / continue($id, as: $user) live on the
+ * RemembersConversations trait — instance methods, not static.
  *
- * The exact API surface of laravel/ai may evolve; if upstream renames
- * forUser()/continue()/prompt()/text()/conversationId(), patch this
- * file and nothing else in the package needs to change.
+ * If laravel/ai isn't installed (or a host app uses a different
+ * agent framework), bind a different AgentDispatcher implementation
+ * in the container.
  */
 class LaravelAiDispatcher implements AgentDispatcher
 {
@@ -25,27 +28,28 @@ class LaravelAiDispatcher implements AgentDispatcher
         Authenticatable $user,
         ?string $conversationId = null,
     ): AgentRunResult {
-        $agentFacade = '\\Laravel\\Ai\\Facades\\Agent';
-
-        if (! class_exists($agentFacade) && ! class_exists('\\Laravel\\Ai\\Agent')) {
+        if (! interface_exists(Agent::class)) {
             throw new \RuntimeException(
                 'laravel/ai is not installed. Either composer require laravel/ai '.
                 'or bind a custom AgentDispatcher implementation.'
             );
         }
 
+        /** @var Agent $agent */
+        $agent = app($agentClass);
+
         if ($conversationId) {
-            $response = $agentFacade::continue($conversationId, as: $user)->prompt($prompt);
+            $agent->continue($conversationId, $user);
         } else {
-            $response = (new $agentClass)->forUser($user)->prompt($prompt);
+            $agent->forUser($user);
         }
 
+        /** @var AgentResponse $response */
+        $response = $agent->prompt($prompt);
+
         return new AgentRunResult(
-            text: (string) $response->text(),
-            conversationId: (string) $response->conversationId(),
-            conversationTitle: method_exists($response, 'conversationTitle')
-                ? $response->conversationTitle()
-                : null,
+            text: (string) $response->text,
+            conversationId: (string) ($response->conversationId ?? ''),
         );
     }
 }
