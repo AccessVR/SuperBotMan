@@ -78,9 +78,54 @@ class SuperBotManConfigurator implements SuperBotManConfiguratorContract
 
     public function getClientConfig(array $overrides = []): array
     {
-        return array_merge($this->config(), [
+        $merged = array_merge($this->config(), [
             'userId' => $this->userId(),
         ], $overrides);
+
+        $mount = rtrim((string) data_get($merged, 'mount', '/chat'), '/');
+
+        // Auto-derive a `pages` array from the agent registry when the
+        // host hasn't specified one. Each registered agent becomes a
+        // launcher button on the widget home screen.
+        if (empty($merged['pages'])) {
+            $registry = app(SuperBotMan::class)->registry();
+
+            $merged['pages'] = array_map(function ($registration) use ($mount) {
+                return [
+                    'id' => $registration->slug,
+                    'title' => Str::headline($registration->slug),
+                    'buttonTitle' => Str::headline($registration->slug),
+                    'buttonDescription' => null,
+                    'chatServer' => $mount.'/'.$registration->slug,
+                    'conversationsEndpoint' => $mount.'/'.$registration->slug.'/conversations',
+                ];
+            }, $registry->all());
+        } else {
+            // Host-defined pages: auto-fill chatServer / conversationsEndpoint
+            // from a `slug` field when the host hasn't set them explicitly.
+            $merged['pages'] = array_map(function ($page) use ($mount) {
+                if (! isset($page['chatServer']) && isset($page['slug'])) {
+                    $page['chatServer'] = $mount.'/'.$page['slug'];
+                }
+                if (! isset($page['conversationsEndpoint']) && isset($page['slug'])) {
+                    $page['conversationsEndpoint'] = $mount.'/'.$page['slug'].'/conversations';
+                }
+
+                return $page;
+            }, $merged['pages']);
+        }
+
+        // Top-level chatServer / conversationsEndpoint default to the
+        // first page's, so widget components that don't yet thread
+        // pageId still hit a working URL.
+        if (! isset($merged['chatServer']) && ! empty($merged['pages'])) {
+            $merged['chatServer'] = $merged['pages'][0]['chatServer'] ?? null;
+        }
+        if (! isset($merged['conversationsEndpoint']) && ! empty($merged['pages'])) {
+            $merged['conversationsEndpoint'] = $merged['pages'][0]['conversationsEndpoint'] ?? null;
+        }
+
+        return $merged;
     }
 
     public function config(mixed $name = null, mixed $value = null): mixed
