@@ -7,6 +7,7 @@ use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Responses\AgentResponse;
 use OrchestrateXR\SuperBotMan\AgentRunResult;
 use OrchestrateXR\SuperBotMan\Contracts\AgentDispatcher;
+use OrchestrateXR\SuperBotMan\ConversationParticipant;
 
 /**
  * Default dispatcher backed by the official Laravel AI SDK
@@ -38,10 +39,16 @@ class LaravelAiDispatcher implements AgentDispatcher
         /** @var Agent $agent */
         $agent = app($agentClass);
 
+        // Wrap the host's Authenticatable so the SDK's persistence
+        // middleware always reads `->id` as the auth identifier,
+        // regardless of the host User model's actual primary key
+        // column name.
+        $participant = new ConversationParticipant($user->getAuthIdentifier());
+
         if ($conversationId) {
-            $agent->continue($conversationId, $user);
+            $agent->continue($conversationId, $participant);
         } else {
-            $agent->forUser($user);
+            $agent->forUser($participant);
         }
 
         /** @var AgentResponse $response */
