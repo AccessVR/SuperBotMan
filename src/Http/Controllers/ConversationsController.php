@@ -19,8 +19,9 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class ConversationsController
 {
-    public function index(Request $request, string $slug): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $slug = (string) $request->route('slug');
         $this->ensureRegistered($slug);
 
         $user = SuperBotMan::agentUser();
@@ -34,8 +35,9 @@ class ConversationsController
         return new JsonResponse($rows);
     }
 
-    public function show(Request $request, string $slug, string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
+        $slug = (string) $request->route('slug');
         $this->ensureRegistered($slug);
 
         $user = SuperBotMan::agentUser();
@@ -62,8 +64,9 @@ class ConversationsController
         ]);
     }
 
-    public function destroy(Request $request, string $slug, string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
+        $slug = (string) $request->route('slug');
         $this->ensureRegistered($slug);
 
         $user = SuperBotMan::agentUser();
