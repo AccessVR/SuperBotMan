@@ -26,6 +26,19 @@ interface SuperBotManConfigurator
     public function agentUser(): Authenticatable;
 
     /**
+     * Whether the given Authenticatable is conceptually anonymous from
+     * the host app's perspective. Some apps (OrchestrateXR among them)
+     * authenticate every visitor as a real User row, with a property
+     * marking certain rows as the shared anonymous account — in that
+     * case this method returns true even though Auth::id() is set.
+     *
+     * Used downstream when "claiming" anonymous conversations on
+     * sign-in: anonymous-owned conversations should reassign to the
+     * real user's row.
+     */
+    public function isAnonymous(Authenticatable $user): bool;
+
+    /**
      * Get the evaluated view contents for the given view.
      *
      * @param  \Illuminate\Contracts\Support\Arrayable|array  $data

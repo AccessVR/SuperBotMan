@@ -44,6 +44,11 @@ class SuperBotManConfigurator implements SuperBotManConfiguratorContract
         );
     }
 
+    public function isAnonymous(Authenticatable $user): bool
+    {
+        return $user instanceof AnonymousAgentUser;
+    }
+
     protected function anonymousSessionToken(): string
     {
         $key = 'super_botman_session_token';

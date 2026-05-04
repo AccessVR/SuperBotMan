@@ -57,18 +57,37 @@ If you find references to any of the above in this codebase, they're stale and s
 - `resources/js/`, `resources/views/`, `resources/css/` — the Vue widget UI (preserved verbatim from prior versions, only identifiers renamed).
 - `routes/web.php` — frame + beacon GET routes for the iframe-based widget.
 
-### Channel + AgentRegistry (commit 2 — not yet present)
-
-When commit 2 lands, expect to see:
+### Channel + AgentRegistry
 
 - `src/Contracts/Channel.php` — the inbound/outbound seam between transport and agent.
 - `src/Channels/WebChannel.php` — reference implementation; reads the existing widget wire format.
+- `src/InboundMessage.php` — readonly DTO produced by `Channel::inbound()`.
+- `src/AgentRunResult.php` — readonly DTO produced by an `AgentDispatcher`.
 - `src/AgentRegistration.php`, `src/AgentRegistry.php` — fluent registration + the registry the service provider walks.
-- `src/Http/Controllers/SuperBotManController.php` — single thin invokable that dispatches to whichever agent the route slug points at.
-- `src/Http/Controllers/ConversationsController.php` — list/show/destroy endpoints over `agent_conversations`.
-- `src/Console/Commands/ChatCommand.php` — `php artisan super-botman:chat {slug}` interactive CLI.
+- `src/SuperBotMan.php` — manager class behind the facade; holds the registry and proxies to the configurator.
+- `src/Http/Controllers/SuperBotManController.php` — single thin invokable that dispatches to whichever agent the route slug points at, with built-in IDOR check on resume.
+- `src/Http/Controllers/ConversationsController.php` — list/show/destroy endpoints over `agent_conversations`. Reads via DB facade with config-overridable table/column names so it doesn't take an Eloquent model dependency on `laravel/ai`.
+- `src/Console/Commands/ChatCommand.php` — `php artisan super-botman:chat {slug}` interactive CLI with `--continue`, `--conversation-id`, `--system` flags.
 - `src/ClientAction.php`, `src/ClientActionBag.php`, `src/Facades/ClientActions.php` — request-scoped collector for tool side effects (navigate, openUrl).
 - `src/AgentContext.php` — request-scoped context bag for the agent and its tools.
+- `src/Contracts/AgentDispatcher.php` + `src/Dispatchers/LaravelAiDispatcher.php` — indirection between the controller and `laravel/ai`. Host apps can swap in a custom dispatcher (handy for tests or to back the package with a different SDK).
+
+### Host-app integration (3 lines)
+
+```php
+// AppServiceProvider::boot()
+SuperBotMan::registerAgent('chat', \App\Agents\ChatAgent::class)
+    ->channel(\OrchestrateXR\SuperBotMan\Channels\WebChannel::class)
+    ->middleware(['auth']);
+```
+
+That auto-mounts:
+- `POST {mount}/chat` — agent endpoint
+- `GET {mount}/chat/conversations` — list
+- `GET {mount}/chat/conversations/{id}` — show
+- `DELETE {mount}/chat/conversations/{id}` — destroy
+
+`{mount}` defaults to `/chat` and is configurable via `config('super-botman.mount')`.
 
 ### Anonymous users
 
