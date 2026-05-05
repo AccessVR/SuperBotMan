@@ -12,7 +12,6 @@ SuperBotMan is the evolution of the prior `orchestratexr/botman-chat-sdk` packag
 - A bundled **Vue chat widget** (beacon + popup/docked iframe) that drops onto any Laravel page with one Blade directive.
 - A **`Channel`** abstraction so the same agent code can serve the Web widget today, and Slack / Discord / your-transport-of-choice tomorrow, without the agents needing to know.
 - An **`AgentRegistry`** so registering an agent and getting auto-mounted routes (POST endpoint, conversation list/show/delete) is three lines in your `AppServiceProvider`.
-- Built-in **IDOR enforcement** on conversation resume — the Laravel AI SDK does not enforce conversation ownership on `Agent::continue()`, so SuperBotMan does it for you.
 - A **CLI** (`php artisan super-botman:chat {slug}`) for testing a registered agent end-to-end without a browser, complete with `--continue` / `--conversation-id` / `--system` flags.
 
 ## What it isn't
