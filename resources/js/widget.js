@@ -99,17 +99,18 @@
         document.body.style.paddingRight = ''
     }
 
+    const dockedMargin = isMobile ? 0 : 16
     const applyDockedPosition = () => {
         beacon.style.display = 'none'
         chat.style.position = 'fixed'
-        chat.style.top = '0'
-        chat.style.right = '0'
-        chat.style.bottom = '0'
+        chat.style.top = dockedMargin + 'px'
+        chat.style.right = dockedMargin + 'px'
+        chat.style.bottom = dockedMargin + 'px'
         chat.style.width = dockedWidth + 'px'
-        chat.style.height = '100%'
+        chat.style.height = `calc(100% - ${dockedMargin * 2}px)`
         chat.style.display = 'block'
         document.body.style.transition = 'padding-right 0.3s ease'
-        document.body.style.paddingRight = dockedWidth + 'px'
+        document.body.style.paddingRight = (dockedWidth + dockedMargin * 2) + 'px'
         open = true
     }
 
@@ -143,7 +144,7 @@
         if (mode === 'docked') {
             if (open) {
                 chat.style.display = 'block'
-                document.body.style.paddingRight = dockedWidth + 'px'
+                document.body.style.paddingRight = (dockedWidth + dockedMargin * 2) + 'px'
             } else {
                 // Closing from docked mode: undock and close
                 mode = 'popup'
