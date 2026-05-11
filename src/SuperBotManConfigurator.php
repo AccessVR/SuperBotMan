@@ -110,6 +110,9 @@ class SuperBotManConfigurator implements SuperBotManConfiguratorContract
                 if (! isset($page['conversationsEndpoint']) && isset($page['slug'])) {
                     $page['conversationsEndpoint'] = $mount.'/'.$page['slug'].'/conversations';
                 }
+                if (! empty($page['avatar'])) {
+                    $page['avatar'] = $this->resolveAssetUrl($page['avatar']);
+                }
 
                 return $page;
             }, $merged['pages']);
@@ -180,12 +183,44 @@ class SuperBotManConfigurator implements SuperBotManConfiguratorContract
 
     public function widget(): string
     {
-        return $this->render('widget', ['config' => $this->config()]);
+        return $this->render('widget', ['config' => $this->getClientConfig()]);
     }
 
     public function asset(string $path): string
     {
         return $this->hotAsset($path) ?: $this->buildAsset($path);
+    }
+
+    public function renderAssistantText(string $text): string
+    {
+        return $text;
+    }
+
+    public function renderUserPrompt(string $message, array $context): string
+    {
+        return $message;
+    }
+
+    public function renderUserText(string $text): string
+    {
+        return $text;
+    }
+
+    /**
+     * Resolve a host-supplied asset reference (e.g. `page.avatar`) to a
+     * URL the browser can fetch. Absolute URLs and protocol-relative
+     * URLs pass through unchanged; bare paths are funneled through
+     * Laravel's `asset()` helper so they pick up the configured CDN
+     * origin in environments like Vapor. Resolved at request time, not
+     * config-load time, so `asset()` is safe to call here.
+     */
+    protected function resolveAssetUrl(string $url): string
+    {
+        if (preg_match('#^(https?:)?//#i', $url) || str_starts_with($url, 'data:')) {
+            return $url;
+        }
+
+        return asset($url);
     }
 
     protected function buildAsset(string $path): string

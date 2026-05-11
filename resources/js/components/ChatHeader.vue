@@ -29,12 +29,13 @@
             v-if="$store.state.docked"
             class="absolute right-8 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
             @click.prevent="emitMessage('chat.undock')"
-            title="Undock to popup"
+            title="Switch to windowed mode"
         >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <rect x="12" y="13" width="7" height="5" rx="1" fill="currentColor" stroke="none" />
             </svg>
-            <span class="sr-only">Undock</span>
+            <span class="sr-only">Switch to windowed mode</span>
         </button>
         <button
             v-if="!$store.state.docked"
@@ -42,8 +43,9 @@
             @click.prevent="emitMessage('chat.dock')"
             title="Dock as sidebar"
         >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <rect x="14" y="4" width="7" height="16" rx="1" fill="currentColor" stroke="none" />
             </svg>
             <span class="sr-only">Dock as sidebar</span>
         </button>

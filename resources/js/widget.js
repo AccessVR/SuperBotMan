@@ -32,6 +32,35 @@
         }
     }
 
+    // Read the iframe-side persisted state so we can boot in the same
+    // docked / popup mode the user left things in. Same localStorage
+    // key the chat iframe uses (same origin), so docked / open flags
+    // survive a reload.
+    const STORAGE_KEY = `super-botman:state:${config.userId || 'anon'}`
+    let persistedState = {}
+    try {
+        const raw = window.localStorage?.getItem(STORAGE_KEY)
+        persistedState = raw ? (JSON.parse(raw) || {}) : {}
+    } catch (e) {
+        persistedState = {}
+    }
+
+    // Merge-write so we don't trample the slice chat.js owns
+    // (page / context / conversationId).
+    const persistWidgetState = () => {
+        try {
+            const raw = window.localStorage?.getItem(STORAGE_KEY)
+            const current = raw ? (JSON.parse(raw) || {}) : {}
+            window.localStorage?.setItem(STORAGE_KEY, JSON.stringify({
+                ...current,
+                open,
+                docked: mode === 'docked',
+            }))
+        } catch (e) {
+            // Storage full / disabled / private mode — silently ignore.
+        }
+    }
+
     let open = false
     let mode = 'popup'
     let dockedWidth = 375
@@ -137,14 +166,17 @@
         open () {
             open = true
             onToggle()
+            persistWidgetState()
         },
         close () {
             open = false
             onToggle()
+            persistWidgetState()
         },
         toggle () {
             open = !open
             onToggle()
+            persistWidgetState()
         },
         say (message) {
             callChatMethod('super-botman.chat.say', typeof message !== 'object' ? { text: message } : message)
@@ -175,24 +207,57 @@
             mode = 'docked'
             applyDockedPosition()
             callChatMethod('super-botman.chat.docked', { docked: true })
+            persistWidgetState()
         },
         undock () {
             mode = 'popup'
             open = true
             applyPopupPosition()
             callChatMethod('super-botman.chat.docked', { docked: false })
+            persistWidgetState()
         },
         context (data) {
             callChatMethod('super-botman.chat.context', data)
+        },
+        startConversation (text, options = {}) {
+            // Make sure the panel is visible before we hand control to
+            // the iframe; the user can't act on a preloaded prompt they
+            // can't see.
+            if (!open) {
+                open = true
+                onToggle()
+                persistWidgetState()
+            }
+            callChatMethod('super-botman.chat.startConversation', {
+                text: typeof text === 'string' ? text : '',
+                pageId: options.pageId || null,
+            })
         },
     }
 
     const initClient = () => {
         window.superbotmanChatWidget = superbotmanChatWidget
 
-        if (config.openByDefault) {
+        // Restoring docked from a prior session takes priority over
+        // openByDefault — dock() opens the panel as part of its work.
+        if (persistedState.docked) {
+            superbotmanChatWidget.dock()
+        } else if (persistedState.open === true) {
+            // If the user explicitly opened or closed the widget in a
+            // prior session, honor that. openByDefault is a first-visit
+            // fallback, not an every-reload override.
+            superbotmanChatWidget.open()
+        } else if (persistedState.open === false) {
+            // intentionally closed — leave as-is
+        } else if (config.openByDefault) {
             superbotmanChatWidget.open()
         }
+
+        // Signal to the host page that the widget's controller API is
+        // attached and ready to receive context updates. Hosts listen
+        // for this so they can push the initial page URL even on a
+        // fresh load, before any in-app navigation has fired.
+        window.dispatchEvent(new CustomEvent('super-botman:ready'))
     }
 
     window.addEventListener('message', (event) => {

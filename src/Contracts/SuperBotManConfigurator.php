@@ -67,4 +67,35 @@ interface SuperBotManConfigurator
      * Resolve a vendor asset URL, honoring the Vite hot file in dev.
      */
     public function asset(string $path): string;
+
+    /**
+     * Transform an assistant message's raw text before it is serialized
+     * into the channel's outbound payload. Hosts override to convert
+     * markdown to sanitized HTML, swap emoji, etc. Channels that render
+     * HTML (e.g. the bundled web widget) call this hook on every text
+     * message they emit; transports that prefer plaintext (Slack, etc.)
+     * should bypass it. Default implementation is a passthrough.
+     */
+    public function renderAssistantText(string $text): string;
+
+    /**
+     * Augment the user's outgoing prompt with per-turn metadata before
+     * the controller hands it to the dispatcher. The augmented string
+     * is what the LLM sees AND what the Agent SDK persists, so the
+     * annotation survives in the conversation history. Hosts typically
+     * append a structured comment with page/URL context so the LLM can
+     * track where the user was at each turn.
+     *
+     * @param  array<string, mixed>  $context  the resolved AgentContext payload
+     */
+    public function renderUserPrompt(string $message, array $context): string;
+
+    /**
+     * Strip any host-injected annotations from a stored user message
+     * before it is rendered into the chat UI on history resume. The
+     * inverse of renderUserPrompt(): whatever was appended at write
+     * time should be removed at read time so the user sees what they
+     * actually typed.
+     */
+    public function renderUserText(string $text): string;
 }

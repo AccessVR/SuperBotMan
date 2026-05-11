@@ -17,6 +17,9 @@ use OrchestrateXR\SuperBotMan\AgentRegistry;
  * @method static array getClientConfig(array $overrides = [])
  * @method static string widget()
  * @method static string asset(string $path)
+ * @method static string renderAssistantText(string $text)
+ * @method static string renderUserPrompt(string $message, array $context)
+ * @method static string renderUserText(string $text)
  *
  * @see \OrchestrateXR\SuperBotMan\SuperBotMan
  */
