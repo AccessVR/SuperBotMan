@@ -1,9 +1,9 @@
 <template>
-    <div 
+    <div
         :class="[
             'flex flex-col bg-gray-100 border-gray-200 p-0 h-screen',
             {
-                'rounded-lg border': !$store.state.config.isMobile && !$store.state.docked
+                'rounded-lg border overflow-hidden': !$store.state.config.isMobile
             }
         ]"
     >
@@ -170,8 +170,9 @@
             -->
         </ChatBody>
         <ChatFooter>
-            <ChatInput 
+            <ChatInput
                 v-if="$store.state.showChatInput"
+                ref="chatInput"
                 @submit="onChatInputSubmit"
             />
         </ChatFooter>
@@ -181,7 +182,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { useStore } from 'vuex'
-import { emitMessage, api } from '../utils'
+import { emitMessage, api, client } from '../utils'
 import ChatHeader from './ChatHeader.vue'
 import ChatBody from './ChatBody.vue'
 import ChatFooter from './ChatFooter.vue'
@@ -193,6 +194,16 @@ import ConversationList from './ConversationList.vue'
 
 const store = useStore()
 const body = ref(null)
+const chatInput = ref(null)
+
+const pickChatPageId = () => {
+    const pages = store.state.config.pages || []
+    const def = store.state.config.defaultPage
+    if (def && def !== 'home' && pages.some(p => p.id === def)) {
+        return def
+    }
+    return pages.find(p => p.id !== 'home')?.id || pages[0]?.id || 'chat'
+}
 
 const writeToMessages = (message, pageId = null) => {
     store.commit('messages', { message, pageId })
@@ -276,8 +287,40 @@ const say = (message, showMessage = true) => {
     }
 }
 
+const restoreConversation = async (pageId, conversationId) => {
+    const page = store.state.config.pages.find(p => p.id === pageId)
+    const endpoint = page?.conversationsEndpoint || store.state.config.conversationsEndpoint
+    if (!endpoint) {
+        store.commit('page', store.state.config.defaultPage || 'home')
+        return
+    }
+
+    try {
+        const response = await client().get(`${endpoint}/${conversationId}`)
+        onResumeConversation(response.data)
+    } catch (e) {
+        // The persisted thread is gone (deleted, expired, or permissions
+        // changed) — clear the stale pointer and fall back to home.
+        console.error('Failed to restore conversation', e)
+        store.commit('clearConversation', pageId)
+        store.commit('page', store.state.config.defaultPage || 'home')
+    }
+}
+
 onMounted(() => {
     emitMessage('chat.init')
+
+    // If we hydrated a non-home page with an active thread id, restore
+    // its history from the server so the user lands back where they
+    // left off after a host-page reload.
+    const hydratedPage = store.state.page
+    const hydratedConversationId = hydratedPage ? store.state.conversationId[hydratedPage] : null
+
+    if (hydratedPage && hydratedPage !== 'home' && hydratedConversationId) {
+        restoreConversation(hydratedPage, hydratedConversationId)
+        return
+    }
+
     store.commit('page', store.state.config.defaultPage || 'home')
 })
 
@@ -313,13 +356,6 @@ const onResumeConversation = (conversation) => {
 
     store.commit('clearConversation', pageId)
 
-    if (page.introMessage) {
-        writeToMessages({
-            text: page.introMessage,
-            from: 'chatbot',
-        }, pageId)
-    }
-
     conversation.messages.forEach(msg => {
         writeToMessages({
             text: msg.content,
@@ -332,7 +368,6 @@ const onResumeConversation = (conversation) => {
         pageId,
         conversationId: conversation.id,
     })
-    store.commit('pristine', { pageId, value: false })
     store.commit('page', pageId)
 }
 
@@ -381,6 +416,14 @@ window.addEventListener('message', (event) => {
     }
     if (event.data?.method === 'super-botman.chat.context') {
         store.commit('context', event.data.params)
+    }
+    if (event.data?.method === 'super-botman.chat.startConversation') {
+        const text = event.data.params?.text || ''
+        const pageId = event.data.params?.pageId || pickChatPageId()
+        store.commit('clearConversation', pageId)
+        store.commit('page', pageId)
+        store.state.input.text = text
+        nextTick(() => chatInput.value?.focus())
     }
 })
 </script>

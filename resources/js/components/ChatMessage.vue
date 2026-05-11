@@ -21,12 +21,12 @@
                     backgroundColor: store.state.config.mainColor,
                 }"
             >
-                <img 
-                    v-if="props.message.additionalParameters?.avatar"
-                    :src="props.message.additionalParameters.avatar"
-                    class="w-full h-full object-cover"
+                <img
+                    v-if="avatar"
+                    :src="avatar"
+                    class="w-full h-full object-cover rounded-full"
                 >
-                <span 
+                <span
                     v-else
                     class="icon w-4 h-4"
                 >
@@ -84,6 +84,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    pageId: {
+        type: String,
+        default: null,
+    },
 })
 
 let visible = ref(props.message.type === MessageTypes.TypingIndicator)
@@ -98,6 +102,22 @@ const icon = computed(() => {
     } else {
         return store.state.config.icons.bot
     }
+})
+
+const pageAvatar = computed(() => {
+    if (!props.pageId) return null
+    const page = (store.state.config.pages || []).find(p => p.id === props.pageId)
+    return page?.avatar || null
+})
+
+const avatar = computed(() => {
+    if (props.message.additionalParameters?.avatar) {
+        return props.message.additionalParameters.avatar
+    }
+    if (props.message.from !== 'visitor') {
+        return pageAvatar.value
+    }
+    return null
 })
 
 onMounted(() => {

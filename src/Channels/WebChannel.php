@@ -43,7 +43,10 @@ class WebChannel implements Channel
         $messages = [];
 
         if ($result->text !== '') {
-            $messages[] = ['type' => 'text', 'text' => $result->text];
+            $messages[] = [
+                'type' => 'text',
+                'text' => $this->config->renderAssistantText($result->text),
+            ];
         }
 
         foreach ($actions->all() as $action) {

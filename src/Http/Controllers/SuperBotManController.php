@@ -36,9 +36,16 @@ class SuperBotManController
         app()->instance(ClientActionBag::class, $bag);
         app()->instance(AgentContext::class, $context);
 
+        // Hand the host a chance to inject per-turn metadata (page URL,
+        // resource id, etc.) into the prompt before it's persisted +
+        // sent to the LLM. The annotation survives in conversation
+        // history so the agent can answer questions about *previous*
+        // pages, not just the current one.
+        $prompt = SuperBotMan::renderUserPrompt($inbound->message, $context->all());
+
         $result = $dispatcher->dispatch(
             agentClass: $registration->agentClass,
-            prompt: $inbound->message,
+            prompt: $prompt,
             user: $inbound->agentUser,
             conversationId: $inbound->conversationId,
         );

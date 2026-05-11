@@ -14,10 +14,39 @@
 
 @layer components {
     .message-text {
+        @apply min-w-0;
+        overflow-wrap: anywhere;
         p {
-            @apply mb-2;    
+            @apply mb-2;
         }
         p:last-child {
+            @apply mb-0;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            @apply font-semibold mb-2;
+        }
+        h1:last-child,
+        h2:last-child,
+        h3:last-child,
+        h4:last-child,
+        h5:last-child,
+        h6:last-child {
+            @apply mb-0;
+        }
+        hr {
+            @apply my-3 border-gray-300;
+        }
+        hr:last-child {
+            @apply mb-0;
+        }
+        pre {
+            @apply whitespace-pre-wrap;
+        }
+        ol, ul {
+            @apply mb-2;
+        }
+        ol:last-child,
+        ul:last-child {
             @apply mb-0;
         }
         ol > li {
@@ -31,6 +60,25 @@
         }
         li > p {
             @apply inline;
+        }
+        li > ul,
+        li > ol {
+            @apply mt-2;
+        }
+        table {
+            @apply block w-full overflow-x-auto mb-2 border-collapse text-left;
+        }
+        table:last-child {
+            @apply mb-0;
+        }
+        th, td {
+            @apply px-2 py-1.5 border border-gray-200 align-top;
+        }
+        th {
+            @apply font-semibold bg-gray-100;
+        }
+        tbody tr:nth-child(even) td {
+            @apply bg-gray-50;
         }
     }
 }

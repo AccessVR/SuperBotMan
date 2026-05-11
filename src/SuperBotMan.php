@@ -18,6 +18,9 @@ use OrchestrateXR\SuperBotMan\Contracts\SuperBotManConfigurator as SuperBotManCo
  * @method array getClientConfig(array $overrides = [])
  * @method string widget()
  * @method string asset(string $path)
+ * @method string renderAssistantText(string $text)
+ * @method string renderUserPrompt(string $message, array $context)
+ * @method string renderUserText(string $text)
  */
 class SuperBotMan
 {

@@ -54,7 +54,8 @@ class ConversationsController
         $messages = DB::table($this->messagesTable())
             ->where($this->messagesForeignKey(), $id)
             ->orderBy('created_at')
-            ->get(['id', 'role', 'content', 'created_at']);
+            ->get(['id', 'role', 'content', 'created_at'])
+            ->map(fn ($message) => $this->renderMessage($message));
 
         return new JsonResponse([
             'id' => $conversation->id,
@@ -62,6 +63,39 @@ class ConversationsController
             'updated_at' => $conversation->updated_at,
             'messages' => $messages,
         ]);
+    }
+
+    /**
+     * Apply role-specific rendering hooks before returning persisted
+     * messages to the widget on resume:
+     *
+     * - Assistant text runs through renderAssistantText so markdown
+     *   stored at write time becomes HTML on read.
+     * - User text runs through renderUserText so any annotations the
+     *   host appended in renderUserPrompt (page URL, etc.) are stripped
+     *   before the user sees their own message in the bubble.
+     *
+     * Tool-call payloads (JSON-encoded arrays/objects) are left alone
+     * so structured content isn't mangled.
+     */
+    protected function renderMessage(object $message): object
+    {
+        if (! is_string($message->content)) {
+            return $message;
+        }
+
+        $trimmed = ltrim($message->content);
+        if ($trimmed === '' || $trimmed[0] === '[' || $trimmed[0] === '{') {
+            return $message;
+        }
+
+        if ($message->role === 'assistant') {
+            $message->content = SuperBotMan::renderAssistantText($message->content);
+        } elseif ($message->role === 'user') {
+            $message->content = SuperBotMan::renderUserText($message->content);
+        }
+
+        return $message;
     }
 
     public function destroy(Request $request, string $id): JsonResponse
