@@ -239,18 +239,22 @@
     const initClient = () => {
         window.superbotmanChatWidget = superbotmanChatWidget
 
-        // Restoring docked from a prior session takes priority over
-        // openByDefault — dock() opens the panel as part of its work.
-        if (persistedState.docked) {
+        // Honor an explicit close from a prior session before anything
+        // else. dock() opens the panel as a side effect of its work, so
+        // if persistedState.docked got stuck at true while open is false
+        // (a stale combination that shouldn't happen but has in practice
+        // on mobile), the docked branch would overrule the user's choice
+        // to close. Closed-state-wins guarantees that doesn't happen.
+        if (persistedState.open === false) {
+            // intentionally closed — leave the beacon visible and the
+            // chat panel hidden, regardless of any other persisted flag.
+        } else if (persistedState.docked) {
             superbotmanChatWidget.dock()
         } else if (persistedState.open === true) {
-            // If the user explicitly opened or closed the widget in a
-            // prior session, honor that. openByDefault is a first-visit
-            // fallback, not an every-reload override.
             superbotmanChatWidget.open()
-        } else if (persistedState.open === false) {
-            // intentionally closed — leave as-is
         } else if (config.openByDefault) {
+            // openByDefault is a first-visit fallback only — once the
+            // user interacts, the branches above take over.
             superbotmanChatWidget.open()
         }
 

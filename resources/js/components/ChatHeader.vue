@@ -1,10 +1,8 @@
 <template>
     <div
         :class="[
-            'shrink-0 p-2 relative',
-            {
-                'rounded-t-lg': !$store.state.config.isMobile && !$store.state.docked
-            }
+            'shrink-0 p-2 sticky top-0 z-10',
+            { 'sm:rounded-t-lg': !$store.state.docked }
         ]"
         :style="{
             backgroundColor: $store.state.config.mainColor
@@ -27,7 +25,7 @@
         </button>
         <button
             v-if="$store.state.docked"
-            class="absolute right-8 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
+            class="hidden sm:block absolute right-8 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
             @click.prevent="emitMessage('chat.undock')"
             title="Switch to windowed mode"
         >
@@ -39,7 +37,7 @@
         </button>
         <button
             v-if="!$store.state.docked"
-            class="absolute right-8 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
+            class="hidden sm:block absolute right-8 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
             @click.prevent="emitMessage('chat.dock')"
             title="Dock as sidebar"
         >
