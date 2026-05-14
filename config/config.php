@@ -29,8 +29,12 @@ return [
     // The title to use in the widget.
     'title' => env('SUPER_BOTMAN_WIDGET_TITLE', env('APP_NAME', 'SuperBotMan')),
 
-    // Whether the chat widget should open automatically when the page loads.
-    'openByDefault' => true,
+    // First-visit fallback: if the visitor has no persisted open/closed state
+    // yet (truly fresh — no entry in localStorage under their user id), should
+    // the widget open itself? Defaults to false so visitors are not greeted by
+    // an unsolicited panel. Once the visitor opens or closes the widget, that
+    // choice is persisted and this setting is a no-op.
+    'openByDefault' => false,
 
     // The default chat page to open when the widget is opened.
     'defaultPage' => 'home',
