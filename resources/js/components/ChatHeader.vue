@@ -1,7 +1,7 @@
 <template>
     <div
         :class="[
-            'shrink-0 p-2 relative',
+            'shrink-0 p-2 relative -mb-px',
             {
                 'rounded-t-lg': !$store.state.config.isMobile && !$store.state.docked
             }
