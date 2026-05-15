@@ -78,6 +78,16 @@ return [
     // The label color for the beacon.
     'beaconLabelColor' => '#ffffff',
 
+    // Color applied to links the agent emits in chat. Defaults to a
+    // traditional blue (Tailwind blue-600) that reads well on the
+    // white message background; host apps typically override this in
+    // their published config to match brand color.
+    'linkColor' => '#2563eb',
+
+    // Whether agent-emitted links render with an underline. Combined
+    // with `linkColor` to give a familiar "this is a link" cue.
+    'linkUnderline' => true,
+
     // Height to use for embedded videos.
     'videoHeight' => 160,
 
