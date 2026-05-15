@@ -40,7 +40,7 @@
         >
             <div class="my-1 w-3 h-3 rounded-full bg-black animate-pulse"></div>
         </div>
-        <div 
+        <div
             v-else-if="props.message.from === 'chatbot'"
             :class="[
                 'message-text py-2 px-4 rounded-lg text-sm',
@@ -49,6 +49,10 @@
                     'bg-white': props.message.from !== 'visitor',
                 }
             ]"
+            :style="{
+                '--sbm-link-color': store.state.config.linkColor,
+                '--sbm-link-decoration': store.state.config.linkUnderline ? 'underline' : 'none',
+            }"
             v-html="props.message.text"
         ></div>
         <div 

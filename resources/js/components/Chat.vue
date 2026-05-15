@@ -1,11 +1,6 @@
 <template>
     <div
-        :class="[
-            'flex flex-col bg-gray-100 border-gray-200 p-0 h-screen',
-            {
-                'rounded-lg border overflow-hidden': !$store.state.config.isMobile
-            }
-        ]"
+        class="flex flex-col bg-gray-100 border-gray-200 p-0 h-dvh sbm-popup-chrome"
     >
         <ChatHeader 
             @back="onBack"

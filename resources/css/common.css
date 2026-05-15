@@ -12,6 +12,22 @@
     height: 100%;
 }
 
+.sbm-fine-pointer-only {
+    display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .sbm-fine-pointer-only {
+        display: block;
+    }
+    .sbm-popup-chrome {
+        @apply rounded-lg border overflow-hidden;
+    }
+    .sbm-header-chrome.sbm-undocked {
+        @apply rounded-t-lg;
+    }
+}
+
 @layer components {
     .message-text {
         @apply min-w-0;
@@ -79,6 +95,13 @@
         }
         tbody tr:nth-child(even) td {
             @apply bg-gray-50;
+        }
+        a {
+            color: var(--sbm-link-color, #2563eb);
+            text-decoration: var(--sbm-link-decoration, underline);
+        }
+        a:hover {
+            opacity: 0.85;
         }
     }
 }
