@@ -79,8 +79,12 @@
     let beacon = document.createElement('iframe')
     beacon.src = beaconEndpoint
     beacon.style.position = 'fixed'
-    beacon.style.bottom = isMobile ? '20px' : '40px'
-    beacon.style.right = isMobile ? '20px' : '40px'
+    // Offsets are reduced by ~7.5px from the visual target because the
+    // beacon iframe is beaconSize+15 with the circle centered, so the
+    // visible badge sits half the 15px padding farther from the corner
+    // than the iframe edge. 33/13 lands the circle at ~40/20px.
+    beacon.style.bottom = isMobile ? '13px' : '33px'
+    beacon.style.right = isMobile ? '13px' : '33px'
     beacon.style.zIndex = '1000'
     beacon.style.width = (config.beaconSize + 15) + 'px'
     beacon.style.height = (config.beaconSize + 15) + 'px'

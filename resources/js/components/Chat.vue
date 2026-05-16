@@ -14,7 +14,7 @@
                 id="home"
             >
                 <template #heading>
-                    <div class="pt-8 pb-4" :style="{ backgroundColor: $store.state.config.mainColor }">
+                    <div class="pt-8 pb-4 -mb-px" :style="{ backgroundColor: $store.state.config.mainColor }">
                         <h1 class="text-lg font-bold text-white text-center mb-2">
                             Start a conversation
                         </h1>
