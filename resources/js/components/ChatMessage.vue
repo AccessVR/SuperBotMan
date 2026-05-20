@@ -98,21 +98,22 @@ let visible = ref(props.message.type === MessageTypes.TypingIndicator)
 
 const store = useStore()
 
+const page = computed(() => {
+    if (!props.pageId) return null
+    return (store.state.config.pages || []).find(p => p.id === props.pageId) || null
+})
+
 const icon = computed(() => {
     if (props.message.additionalParameters?.icon) {
         return store.state.config.icons[props.message.additionalParameters.icon]
     } else if (props.message.from === 'visitor') {
         return store.state.config.icons.user
     } else {
-        return store.state.config.icons.bot
+        return page.value?.icon || store.state.config.icons.bot
     }
 })
 
-const pageAvatar = computed(() => {
-    if (!props.pageId) return null
-    const page = (store.state.config.pages || []).find(p => p.id === props.pageId)
-    return page?.avatar || null
-})
+const pageAvatar = computed(() => page.value?.avatar || null)
 
 const avatar = computed(() => {
     if (props.message.additionalParameters?.avatar) {

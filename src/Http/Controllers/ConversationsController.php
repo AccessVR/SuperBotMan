@@ -32,6 +32,17 @@ class ConversationsController
             ->limit(50)
             ->get(['id', 'title', 'updated_at']);
 
+        $agents = DB::table($this->messagesTable())
+            ->whereIn($this->messagesForeignKey(), $rows->pluck('id'))
+            ->orderByDesc('created_at')
+            ->get([$this->messagesForeignKey().' as cid', 'agent'])
+            ->groupBy('cid')
+            ->map(fn ($group) => $group->first()->agent);
+
+        $rows->each(function ($row) use ($agents) {
+            $row->page_id = $this->pageIdForAgent($agents[$row->id] ?? null);
+        });
+
         return new JsonResponse($rows);
     }
 
@@ -57,10 +68,18 @@ class ConversationsController
             ->get(['id', 'role', 'content', 'created_at'])
             ->map(fn ($message) => $this->renderMessage($message));
 
+        $agent = DB::table($this->messagesTable())
+            ->where($this->messagesForeignKey(), $id)
+            ->orderByDesc('created_at')
+            ->value('agent');
+
         return new JsonResponse([
             'id' => $conversation->id,
             'title' => $conversation->title ?? null,
             'updated_at' => $conversation->updated_at,
+            // Lets the widget resume the conversation on its owning
+            // channel (Chat.vue::onResumeConversation reads page_id).
+            'page_id' => $this->pageIdForAgent($agent) ?? $slug,
             'messages' => $messages,
         ]);
     }
@@ -115,6 +134,26 @@ class ConversationsController
         }
 
         return new JsonResponse(['deleted' => true]);
+    }
+
+    /**
+     * Map a persisted message `agent` (the agent class the SDK records
+     * per message) to the registered slug, so the widget can resume a
+     * conversation on the channel that owns it. Null when unknown.
+     */
+    protected function pageIdForAgent(?string $agent): ?string
+    {
+        if (! $agent) {
+            return null;
+        }
+
+        foreach (SuperBotMan::registry()->all() as $registration) {
+            if ($registration->agentClass === $agent) {
+                return $registration->slug;
+            }
+        }
+
+        return null;
     }
 
     protected function ensureRegistered(string $slug): void

@@ -14,7 +14,7 @@
                 id="home"
             >
                 <template #heading>
-                    <div class="pt-8 pb-4" :style="{ backgroundColor: $store.state.config.mainColor }">
+                    <div class="-mt-px pt-8 pb-4 -mb-px" :style="{ backgroundColor: $store.state.config.mainColor }">
                         <h1 class="text-lg font-bold text-white text-center mb-2">
                             Start a conversation
                         </h1>
@@ -123,7 +123,12 @@
                     v-if="$store.state.page === page.id"
                     :title="page.title"
                 >
+                    <SupportForm
+                        v-if="page.type === 'form'"
+                        :page="page"
+                    />
                     <ChatMessages
+                        v-else
                         :pageId="page.id"
                         @message="onMessage"
                     />
@@ -182,6 +187,7 @@ import ChatHeader from './ChatHeader.vue'
 import ChatBody from './ChatBody.vue'
 import ChatFooter from './ChatFooter.vue'
 import ChatMessages from './ChatMessages.vue'
+import SupportForm from './SupportForm.vue'
 import ChatInput from './ChatInput.vue'
 import ChatPage from './ChatPage.vue'
 import ChatPageButton from './ChatPageButton.vue'

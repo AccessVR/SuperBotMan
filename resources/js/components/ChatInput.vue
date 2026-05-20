@@ -37,6 +37,15 @@ const textarea = ref(null)
 const resize = () => {
     const el = textarea.value
     if (!el) return
+    if (!el.value) {
+        // Empty — let rows="1" provide the natural one-line height.
+        // The widget's chat iframe is display:none until the parent
+        // page calls open(), so scrollHeight read at mount time comes
+        // back wrong; writing that as an inline height collapses or
+        // inflates the field until the first keystroke re-runs resize.
+        el.style.height = ''
+        return
+    }
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 128) + 'px'
 }
