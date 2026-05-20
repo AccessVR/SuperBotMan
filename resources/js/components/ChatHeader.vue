@@ -1,7 +1,7 @@
 <template>
     <div
         :class="[
-            'shrink-0 p-2 relative -mb-px sbm-header-chrome',
+            'shrink-0 p-2 relative sbm-header-chrome',
             { 'sbm-undocked': !$store.state.docked }
         ]"
         :style="{

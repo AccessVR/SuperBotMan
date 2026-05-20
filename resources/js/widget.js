@@ -4,6 +4,13 @@
 
     let config = window.superbotmanWidget
 
+    // Host pages (embedded conversation player, iframe, Unity app) hide
+    // the launcher beacon by adding this class to <body>. widget.js runs
+    // in the host document, so this is a same-document class check — no
+    // cross-frame access needed.
+    const hideBeaconClass = config.hideBeaconClass || '--hide-beacon'
+    const beaconForcedHidden = () => document.body.classList.contains(hideBeaconClass)
+
     let chatWidth = new String(isMobile ? config.mobileWidth : config.desktopWidth)
     if (chatWidth.indexOf('%') === -1) {
         chatWidth += 'px'
@@ -91,7 +98,7 @@
     beacon.style.border = 'none'
 
     const applyPopupPosition = () => {
-        beacon.style.display = ''
+        beacon.style.display = beaconForcedHidden() ? 'none' : ''
         chat.style.position = 'fixed'
         chat.style.bottom = isMobile ? '0' : '120px'
         chat.style.right = isMobile ? '0' : '40px'
@@ -116,6 +123,17 @@
         document.body.style.transition = 'padding-right 0.3s ease'
         document.body.style.paddingRight = (dockedWidth + dockedMargin * 2) + 'px'
         open = true
+    }
+
+    // Reconcile the beacon's visibility with the host body class. The
+    // force-hide always wins; otherwise popup mode shows the beacon and
+    // docked mode keeps it hidden (its own logic already did that).
+    const refreshBeaconVisibility = () => {
+        if (beaconForcedHidden()) {
+            beacon.style.display = 'none'
+        } else if (mode !== 'docked') {
+            beacon.style.display = ''
+        }
     }
 
     const callChatMethod = (method, params) => {
@@ -299,6 +317,16 @@
     document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(chat)
         document.body.appendChild(beacon)
+
+        refreshBeaconVisibility()
+
+        // The host can add/remove the hide class at runtime (e.g. opening
+        // an embedded player without a full reload), so watch <body> and
+        // re-reconcile when its class attribute changes.
+        new MutationObserver(refreshBeaconVisibility).observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class'],
+        })
     })
 
 }()
