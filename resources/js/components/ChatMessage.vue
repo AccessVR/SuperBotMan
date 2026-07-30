@@ -53,6 +53,7 @@
                 '--sbm-link-color': store.state.config.linkColor,
                 '--sbm-link-decoration': store.state.config.linkUnderline ? 'underline' : 'none',
             }"
+            @click="onMessageClick"
             v-html="props.message.text"
         ></div>
         <div 
@@ -73,7 +74,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useStore } from 'vuex'
-import { MessageTypes } from '../utils'
+import { MessageTypes, emitMessage } from '../utils'
 
 const message = ref(null)
 
@@ -125,10 +126,32 @@ const avatar = computed(() => {
     return null
 })
 
+// Links the assistant writes to in-app pages (same origin as the host) are
+// handed to the host as a `navigate` client action so it can route them
+// client-side (Nova.visit) instead of a full-page load or new tab. Genuinely
+// external links, modified clicks, and explicit new-tab links pass through.
+const onMessageClick = (event) => {
+    const anchor = event.target.closest('a')
+    if (!anchor) {
+        return
+    }
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return
+    }
+    if (anchor.target === '_blank' || anchor.origin !== window.location.origin) {
+        return
+    }
+    event.preventDefault()
+    emitMessage('chat.clientAction', {
+        action: 'navigate',
+        payload: { url: anchor.pathname + anchor.search + anchor.hash },
+    })
+}
+
 onMounted(() => {
     setTimeout(() => {
         visible.value = props.message.type !== MessageTypes.TypingIndicator
-        emit('message', props.message, message.value?.$el) 
+        emit('message', props.message, message.value?.$el)
     }, (props.message.timeout || 0) * 1000)
 })
 </script>
