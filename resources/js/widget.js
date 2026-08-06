@@ -111,14 +111,26 @@
     }
 
     const dockedMargin = isMobile ? 0 : 16
+
+    // Fixed host chrome (the account bar, a maintenance banner) publishes its
+    // height as a CSS variable on <html>. A docked panel reads it so it tucks
+    // below that chrome instead of hiding under it.
+    const topChromeHeight = () => {
+        const styles = getComputedStyle(document.documentElement)
+        const px = (name) => parseFloat(styles.getPropertyValue(name)) || 0
+
+        return px('--account-bar-h') + px('--maintenance-banner-h')
+    }
+
     const applyDockedPosition = () => {
         beacon.style.display = 'none'
+        const topMargin = dockedMargin + topChromeHeight()
         chat.style.position = 'fixed'
-        chat.style.top = dockedMargin + 'px'
+        chat.style.top = topMargin + 'px'
         chat.style.right = dockedMargin + 'px'
         chat.style.bottom = dockedMargin + 'px'
         chat.style.width = dockedWidth + 'px'
-        chat.style.height = `calc(100% - ${dockedMargin * 2}px)`
+        chat.style.height = `calc(100% - ${topMargin + dockedMargin}px)`
         chat.style.display = 'block'
         document.body.style.transition = 'padding-right 0.3s ease'
         document.body.style.paddingRight = (dockedWidth + dockedMargin * 2) + 'px'
@@ -133,6 +145,17 @@
             beacon.style.display = 'none'
         } else if (mode !== 'docked') {
             beacon.style.display = ''
+        }
+    }
+
+    // Re-reconcile everything that depends on host body classes: the beacon's
+    // visibility, and — while docked — the panel's offset below host chrome, so
+    // it re-tucks if the account bar or a maintenance banner appears or leaves.
+    const reconcileHostChrome = () => {
+        refreshBeaconVisibility()
+
+        if (mode === 'docked') {
+            applyDockedPosition()
         }
     }
 
@@ -318,12 +341,13 @@
         document.body.appendChild(chat)
         document.body.appendChild(beacon)
 
-        refreshBeaconVisibility()
+        reconcileHostChrome()
 
-        // The host can add/remove the hide class at runtime (e.g. opening
-        // an embedded player without a full reload), so watch <body> and
-        // re-reconcile when its class attribute changes.
-        new MutationObserver(refreshBeaconVisibility).observe(document.body, {
+        // The host can add/remove classes at runtime (e.g. opening an embedded
+        // player, or showing the account bar / maintenance banner), so watch
+        // <body> and re-reconcile the beacon and a docked panel's top offset
+        // when its class attribute changes.
+        new MutationObserver(reconcileHostChrome).observe(document.body, {
             attributes: true,
             attributeFilter: ['class'],
         })
