@@ -34,11 +34,17 @@
                 </span>
             </div>
         </div>
-        <div 
+        <div
             v-if="loading || props.message.type === MessageTypes.TypingIndicator"
             class="py-2 text-sm"
         >
-            <div class="my-1 w-3 h-3 rounded-full bg-black animate-pulse"></div>
+            <div class="flex items-center gap-2">
+                <div class="my-1 w-3 h-3 flex-shrink-0 rounded-full bg-black animate-pulse"></div>
+                <span
+                    v-if="loading && store.state.activity"
+                    class="text-xs text-gray-500 animate-pulse"
+                >{{ store.state.activity }}&hellip;</span>
+            </div>
         </div>
         <div
             v-else-if="props.message.from === 'chatbot'"

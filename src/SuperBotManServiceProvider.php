@@ -97,6 +97,13 @@ class SuperBotManServiceProvider extends ServiceProvider
                     ->defaults('slug', $registration->slug)
                     ->name("super-botman.conversations.{$registration->slug}.index");
 
+                // Registered before the wildcard {id} routes so "prepare"
+                // is never captured as a conversation id.
+                Route::post($convosBase.'/prepare', [ConversationsController::class, 'prepare'])
+                    ->middleware($middleware)
+                    ->defaults('slug', $registration->slug)
+                    ->name("super-botman.conversations.{$registration->slug}.prepare");
+
                 Route::get($convosBase.'/{id}', [ConversationsController::class, 'show'])
                     ->middleware($middleware)
                     ->defaults('slug', $registration->slug)

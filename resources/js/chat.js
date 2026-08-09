@@ -2,10 +2,30 @@ import { createApp } from 'vue'
 import { createStore } from 'vuex'
 import Chat from './components/Chat.vue'
 import { v4 as uuidv4 } from 'uuid'
+import Echo from 'laravel-echo'
+import Pusher from 'pusher-js'
 
 const app = createApp(Chat)
 
 const config = window.superbotmanWidget
+
+// The widget lives in its own iframe, so the host page's Echo instance
+// (if any) is out of reach — build our own connection when the host
+// supplies one via config.activity.echo (public key + host only; auth
+// rides the same-origin /broadcasting/auth with session cookies).
+const echoConfig = config.activity?.echo
+if (echoConfig?.key && !window.Echo) {
+    window.Pusher = Pusher
+    window.Echo = new Echo({
+        broadcaster: echoConfig.broadcaster || 'reverb',
+        key: echoConfig.key,
+        wsHost: echoConfig.host,
+        wsPort: echoConfig.port ?? 443,
+        wssPort: echoConfig.port ?? 443,
+        forceTLS: (echoConfig.scheme ?? 'https') === 'https',
+        enabledTransports: ['ws', 'wss'],
+    })
+}
 
 // add default page
 if (!config.pages?.length) {
@@ -73,6 +93,10 @@ const store = createStore({
         loading: false,
         waiting: false,
         error: false,
+        // Live agent-activity label ("Listing experiences…") broadcast by
+        // the host while a reply is being generated; shown beside the
+        // typing indicator. Null when idle or when Echo is unavailable.
+        activity: null,
     },
     getters: {
         chatServer: (state) => (pageId) => {
@@ -106,6 +130,12 @@ const store = createStore({
         },
         loading(state, value) {
             state.loading = value
+            if (!value) {
+                state.activity = null
+            }
+        },
+        activity(state, value) {
+            state.activity = value
         },
         waiting(state, value) {
             state.waiting = value
