@@ -10,6 +10,7 @@ use OrchestrateXR\SuperBotMan\ClientActionBag;
 use OrchestrateXR\SuperBotMan\Contracts\AgentDispatcher;
 use OrchestrateXR\SuperBotMan\Contracts\Channel;
 use OrchestrateXR\SuperBotMan\Facades\SuperBotMan;
+use OrchestrateXR\SuperBotMan\Support\ConversationTitler;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -49,6 +50,12 @@ class SuperBotManController
             user: $inbound->agentUser,
             conversationId: $inbound->conversationId,
         );
+
+        // Conversations minted by the prepare endpoint start untitled;
+        // generate the title from the first message after the response is
+        // sent so it never delays the reply. No-op for conversations the
+        // SDK created (and titled) itself.
+        ConversationTitler::backfillAfterResponse($result->conversationId, $inbound->message);
 
         return $channel->outbound($result, $bag, $inbound);
     }

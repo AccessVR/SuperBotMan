@@ -224,10 +224,70 @@ const whisper = (message) => {
     say(message, false)
 }
 
-const say = (message, showMessage = true) => {
+// --- Live agent-activity narration -------------------------------------
+// When the host configures an `activity` broadcast channel and the page
+// has Echo available, the widget subscribes per conversation and shows
+// what the agent is doing ("Listing experiences…") beside the typing
+// indicator. Everything degrades silently to the plain indicator when
+// Echo or the config is absent.
+
+const conversationsEndpointFor = (pageId) => {
+    const page = store.state.config.pages.find(p => p.id === pageId)
+    return page?.conversationsEndpoint || store.state.config.conversationsEndpoint
+}
+
+// Mint the conversation before its first message so the activity channel
+// can be subscribed from the very first turn. Failures fall back to the
+// legacy flow (the server creates the conversation on first dispatch).
+const ensureConversationPrepared = async (pageId) => {
+    const existing = store.state.conversationId[pageId]
+    if (existing) {
+        return existing
+    }
+    const endpoint = conversationsEndpointFor(pageId)
+    if (!endpoint || !store.state.config.activity || !window.Echo) {
+        return null
+    }
+    try {
+        const response = await client().post(`${endpoint}/prepare`)
+        const conversationId = response.data?.conversationId
+        if (conversationId) {
+            store.commit('conversationId', { pageId, conversationId })
+        }
+        return conversationId || null
+    } catch (e) {
+        return null
+    }
+}
+
+let activityChannelName = null
+
+const listenForActivity = (conversationId) => {
+    const activity = store.state.config.activity
+    if (!activity?.channel || !activity?.event || !window.Echo || !conversationId) {
+        return
+    }
+    const channelName = activity.channel.replace('{conversationId}', conversationId)
+    if (channelName === activityChannelName) {
+        return
+    }
+    if (activityChannelName) {
+        window.Echo.leave(activityChannelName)
+    }
+    activityChannelName = channelName
+    // No loading guard here: the first tool event can arrive inside the
+    // 300ms delay before `loading` flips true. Display is gated by the
+    // loading branch in ChatMessage, and loading(false) clears the label.
+    window.Echo.private(channelName).listen(activity.event, (event) => {
+        store.commit('activity', event.label || null)
+    })
+}
+
+const say = async (message, showMessage = true) => {
     const pageId = store.state.page
     store.commit('error', false)
     const waitBeforeChangingLoadingState = setTimeout(() => store.commit('loading', true), 300)
+    listenForActivity(await ensureConversationPrepared(pageId))
     let timeout = 0
     api({
         ...{

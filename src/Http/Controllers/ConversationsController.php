@@ -5,6 +5,7 @@ namespace OrchestrateXR\SuperBotMan\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use OrchestrateXR\SuperBotMan\Facades\SuperBotMan;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -134,6 +135,33 @@ class ConversationsController
         }
 
         return new JsonResponse(['deleted' => true]);
+    }
+
+    /**
+     * Mint a conversation before its first message so the widget can
+     * subscribe to per-conversation broadcast channels (agent activity)
+     * from the very first turn. The title is intentionally empty — it is
+     * backfilled after the first reply (see ConversationTitler), which
+     * also moves title generation off the first turn's critical path.
+     */
+    public function prepare(Request $request): JsonResponse
+    {
+        $slug = (string) $request->route('slug');
+        $this->ensureRegistered($slug);
+
+        $user = SuperBotMan::agentUser();
+
+        $conversationId = (string) Str::uuid7();
+
+        DB::table($this->table())->insert([
+            'id' => $conversationId,
+            $this->userColumn() => $user->getAuthIdentifier(),
+            'title' => '',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return new JsonResponse(['conversationId' => $conversationId], 201);
     }
 
     /**
