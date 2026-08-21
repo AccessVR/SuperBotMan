@@ -3,8 +3,10 @@
 namespace OrchestrateXR\SuperBotMan\Contracts;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 interface SuperBotManConfigurator
 {
@@ -26,6 +28,16 @@ interface SuperBotManConfigurator
     public function agentUser(): Authenticatable;
 
     /**
+     * Identifier of the agentUser() row WITHOUT side effects, for read
+     * paths (conversation list / show / destroy). agentUser() may
+     * get-or-create a backing record; this method must never create
+     * one — a drive-by GET should not mint users. Returns null when
+     * the current visitor has no user record yet, which callers treat
+     * as "owns no conversations" (empty list / 404).
+     */
+    public function agentUserId(): int|string|null;
+
+    /**
      * Whether the given Authenticatable is conceptually anonymous from
      * the host app's perspective. Some apps (OrchestrateXR among them)
      * authenticate every visitor as a real User row, with a property
@@ -41,7 +53,7 @@ interface SuperBotManConfigurator
     /**
      * Get the evaluated view contents for the given view.
      *
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
+     * @param  Arrayable|array  $data
      */
     public function view(?string $view = null, $data = [], array $mergeData = []): View|ViewFactory;
 
@@ -61,7 +73,37 @@ interface SuperBotManConfigurator
     /**
      * Render the embeddable widget view.
      */
-    public function widget(): string;
+    public function widget(array $overrides = []): string;
+
+    /**
+     * Resolve an offsite embed key to widget-config overrides, or null
+     * when the key is unknown. Hosts override this to look up whatever
+     * entity (organization, tenant, site) owns the key; the default
+     * knows no keys, which keeps the embed surface inert until a host
+     * opts in — the loader endpoint 404s on null.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function embedContext(string $key): ?array;
+
+    /**
+     * Per-request widget-config overrides for the frame + beacon GET
+     * routes. Requests without an embed key get none (the stock
+     * same-origin widget); embed requests resolve their key through
+     * embedContext() and abort when it is unknown.
+     *
+     * @return array<string, mixed>
+     */
+    public function frameOverrides(Request $request): array;
+
+    /**
+     * The pruned, public, cacheable config served to a third-party
+     * page by the embed loader: absolute frame URLs and placement
+     * geometry only — nothing session-derived, nothing secret.
+     *
+     * @return array<string, mixed>
+     */
+    public function getEmbedLoaderConfig(string $key): array;
 
     /**
      * Resolve a vendor asset URL, honoring the Vite hot file in dev.

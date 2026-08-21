@@ -4,10 +4,39 @@ import Chat from './components/Chat.vue'
 import { v4 as uuidv4 } from 'uuid'
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
+import { client } from './utils'
 
 const app = createApp(Chat)
 
 const config = window.superbotmanWidget
+
+// Offsite embeds: keep the visitor's identity across page loads. The
+// frame GET mints a fresh token (and a fresh visitor id) every time —
+// only this iframe can know whether the visitor has been here before,
+// so if a previous token is stored, exchange it for a fresh one that
+// keeps the ORIGINAL visitor id, and the conversation history follows.
+const EMBED_TOKEN_KEY = 'super-botman:embed-token'
+if (config.embedded && config.embedToken) {
+    try {
+        const stored = window.localStorage?.getItem(EMBED_TOKEN_KEY)
+        if (stored && stored !== config.embedToken && config.tokenExchangeEndpoint) {
+            client().post(config.tokenExchangeEndpoint, { token: stored }).then(response => {
+                if (response.data?.token) {
+                    config.embedToken = response.data.token
+                    window.localStorage?.setItem(EMBED_TOKEN_KEY, response.data.token)
+                }
+            }).catch(() => {
+                // Stored token unusable (revoked key, org disabled) —
+                // fall forward to the fresh identity.
+                window.localStorage?.setItem(EMBED_TOKEN_KEY, config.embedToken)
+            })
+        } else {
+            window.localStorage?.setItem(EMBED_TOKEN_KEY, config.embedToken)
+        }
+    } catch (e) {
+        // Storage disabled — the visitor is simply new every visit.
+    }
+}
 
 // The widget lives in its own iframe, so the host page's Echo instance
 // (if any) is out of reach — build our own connection when the host
@@ -49,7 +78,13 @@ if (!config.pages?.length) {
 // LLM conversation; messages themselves are re-fetched from the
 // server on mount when a thread id is restored, so they can't go
 // stale.
-const STORAGE_KEY = `super-botman:state:${config.userId || 'anon'}`
+//
+// This key lives on the APP origin (we are the iframe) and holds only
+// the chat slice; widget.js keeps open/docked on the embedding page's
+// origin. Embedded installs are cookieless, so config.userId is a
+// fresh session id every load — key on a stable name instead (the
+// browser partitions our storage per embedding site anyway).
+const STORAGE_KEY = 'super-botman:state:' + (config.embedded ? 'embed' : (config.userId || 'anon'))
 
 const loadPersisted = () => {
     try {
@@ -176,14 +211,9 @@ const store = createStore({
 
 // Persist a slim slice of state on every mutation so the next page
 // load (or browser-tab reopen) can rehydrate the active thread.
-// Merge with whatever's already in storage so we don't trample the
-// `open` flag widget.js writes from the parent window.
 store.subscribe((mutation, state) => {
     try {
-        const raw = window.localStorage?.getItem(STORAGE_KEY)
-        const current = raw ? (JSON.parse(raw) || {}) : {}
         window.localStorage?.setItem(STORAGE_KEY, JSON.stringify({
-            ...current,
             page: state.page,
             context: state.context,
             conversationId: state.conversationId,

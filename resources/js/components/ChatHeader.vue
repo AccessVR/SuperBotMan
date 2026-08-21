@@ -24,7 +24,7 @@
             <span class="sr-only">Back</span>
         </button>
         <button
-            v-if="$store.state.docked"
+            v-if="$store.state.docked && !$store.state.config.embedded"
             class="sbm-fine-pointer-only absolute right-8 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
             @click.prevent="emitMessage('chat.undock')"
             title="Switch to windowed mode"
@@ -36,7 +36,7 @@
             <span class="sr-only">Switch to windowed mode</span>
         </button>
         <button
-            v-if="!$store.state.docked"
+            v-if="!$store.state.docked && !$store.state.config.embedded"
             class="sbm-fine-pointer-only absolute right-8 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
             @click.prevent="emitMessage('chat.dock')"
             title="Dock as sidebar"

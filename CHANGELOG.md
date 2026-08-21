@@ -2,6 +2,28 @@
 
 All notable changes to `super-botman` (formerly `botman-chat-sdk`) will be documented in this file.
 
+## [0.2.0] — Offsite embedding
+
+The widget can now be embedded on external websites (different origins than the app serving it). Same-origin installs are unchanged except where noted.
+
+### Added
+
+- **Embed loader endpoint** `GET {mount}/embed/{key}.js` (`EmbedController` + `embed.blade.php`): a cacheable, cookieless script for one-line third-party embedding. Emits a pruned `window.superbotmanWidget` (absolute frame URLs carrying `?embed_key=`, geometry — no session-derived values) and async-injects `widget.js`. Inert by default: it 404s until the host implements `embedContext()`.
+- **Host hooks on the configurator contract**: `embedContext(string $key): ?array` (resolve an embed key to config overrides; null = unknown), `frameOverrides(Request): array` (per-request overrides for the frame/beacon GETs — the previously hardcoded-empty `$config`), and `getEmbedLoaderConfig(string $key): array`. New `config('super-botman.frame_middleware')` appends host validation middleware to the frame routes.
+- **`agentUserId(): int|string|null`** on the configurator contract — side-effect-free identity for read paths. `ConversationsController` index/show/destroy now use it (null → empty list / 404), so a drive-by GET never mints an `AnonymousAgentUser` row.
+- **Embedded mode (`config.embedded`)**: `widget.js` appends `parent=<origin>` to frame srcs, disables dock mode (no reflowing someone else's page), and `ChatMessage.vue` stops intercepting app links (no host router offsite). `chat.js` persists/exchanges a host-minted visitor token (`config.embedToken` + `config.tokenExchangeEndpoint`) and sends it as `X-Embed-Chat-Token` on every request; `utils.client()` attaches it as an axios default.
+- `widget(array $overrides = [])` — the `@superbotman` directive's argument is no longer silently discarded.
+- `renderIcons(string $stroke)` extracted so per-request branding can re-render icons without touching the memoized config.
+
+### Fixed / hardened (applies to same-origin installs too)
+
+- **postMessage is now origin-addressed and origin-validated everywhere.** All sends pass an explicit targetOrigin (`appOrigin` derived from `frameEndpoint`; `parentOrigin` from config); all listeners validate `event.origin` (and, in `widget.js`, `event.source` against our two frames). Previously no call passed a targetOrigin and no listener checked origins — any frame on the page could drive the widget.
+- **`super-botman.chat.api` no longer honors caller-supplied endpoints** — a message sender could previously make the iframe POST the visitor's cookies to an arbitrary URL. `api()` routes only to configured `chatServer` values.
+- **Per-page `chatServer` routing actually works**: `api()`'s first param was named `server` while every caller passed `chatServer`, so all messages went to page[0]'s endpoint.
+- **`Beacon.vue` referenced an undefined `$store`**, throwing in its message handler — the beacon icon never toggled between open/closed. Also fixed the `widget.js` relay predicate (`method?.indexOf(...) !== -1` is true for `undefined`) that relayed every unrelated postMessage and dropped `super-botman.widget.*` messages entirely.
+- **`widget.js` mounts even when loaded after `DOMContentLoaded`** (async loaders).
+- **localStorage split**: `widget.js` keeps `{open, docked}` under its own `super-botman:widget` key (embedding origin); `chat.js` keeps the chat slice under `super-botman:state:*` (app origin). The cross-frame merge-writes assumed one shared store, which is false cross-origin. One-time effect: existing users lose their remembered open/docked state once.
+
 ## [Unreleased]
 
 ### Changed — BREAKING

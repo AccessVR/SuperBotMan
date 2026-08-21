@@ -4,6 +4,15 @@
 
     let config = window.superbotmanWidget
 
+    // On an external site the widget runs on a different origin than the
+    // app serving the iframes, so every postMessage in either direction
+    // is addressed and validated against the app's origin — derived from
+    // the frame endpoint, which is absolute for embedded installs and
+    // relative (resolving to our own origin) for same-origin installs.
+    const appOrigin = new URL(config.frameEndpoint, window.location.href).origin
+
+    const embedded = !!config.embedded
+
     // Host pages (embedded conversation player, iframe, Unity app) hide
     // the launcher beacon by adding this class to <body>. widget.js runs
     // in the host document, so this is a same-document class check — no
@@ -21,29 +30,38 @@
         chatHeight += 'px'
     }
 
+    const appendQuery = (endpoint, pairs) => {
+        const query = Object.entries(pairs)
+            .map(([key, value]) => key + '=' + encodeURIComponent(value))
+            .join('&')
+
+        return endpoint + (endpoint.indexOf('?') === -1 ? '?' : '&') + query
+    }
+
     let frameEndpoint = config.frameEndpoint
-    if (isMobile) {
-        if (frameEndpoint.indexOf('?') === -1) {
-            frameEndpoint += '?mobile=true'
-        } else {
-            frameEndpoint += '&mobile=true'
-        }
-    }
-
     let beaconEndpoint = config.beaconEndpoint
+
     if (isMobile) {
-        if (beaconEndpoint.indexOf('?') === -1) {
-            beaconEndpoint += '?mobile=true'
-        } else {
-            beaconEndpoint += '&mobile=true'
-        }
+        frameEndpoint = appendQuery(frameEndpoint, { mobile: 'true' })
+        beaconEndpoint = appendQuery(beaconEndpoint, { mobile: 'true' })
     }
 
-    // Read the iframe-side persisted state so we can boot in the same
-    // docked / popup mode the user left things in. Same localStorage
-    // key the chat iframe uses (same origin), so docked / open flags
-    // survive a reload.
-    const STORAGE_KEY = `super-botman:state:${config.userId || 'anon'}`
+    // Tell the frames who is embedding them. The server validates this
+    // against the organization's allowed domains and echoes it back into
+    // the frame config as parentOrigin — the postMessage target for
+    // iframe→host messages. Lying here is self-defeating: messages
+    // addressed to a wrong origin are dropped by the browser.
+    if (embedded) {
+        frameEndpoint = appendQuery(frameEndpoint, { parent: window.location.origin })
+        beaconEndpoint = appendQuery(beaconEndpoint, { parent: window.location.origin })
+    }
+
+    // Boot-time open/docked state. This key lives on the embedding
+    // page's origin and belongs to widget.js alone; the chat iframe
+    // keeps its own slice (page / context / conversation) on the app
+    // origin. The two stores are only the same place for same-origin
+    // installs, so neither side may assume it can read the other's.
+    const STORAGE_KEY = 'super-botman:widget'
     let persistedState = {}
     try {
         const raw = window.localStorage?.getItem(STORAGE_KEY)
@@ -52,14 +70,9 @@
         persistedState = {}
     }
 
-    // Merge-write so we don't trample the slice chat.js owns
-    // (page / context / conversationId).
     const persistWidgetState = () => {
         try {
-            const raw = window.localStorage?.getItem(STORAGE_KEY)
-            const current = raw ? (JSON.parse(raw) || {}) : {}
             window.localStorage?.setItem(STORAGE_KEY, JSON.stringify({
-                ...current,
                 open,
                 docked: mode === 'docked',
             }))
@@ -164,8 +177,8 @@
             method,
             params
         }
-        chat.contentWindow.postMessage(message)
-        beacon.contentWindow.postMessage(message)
+        chat.contentWindow?.postMessage(message, appOrigin)
+        beacon.contentWindow?.postMessage(message, appOrigin)
     }
 
     const callBeaconMethod = (method, params) => {
@@ -173,15 +186,20 @@
             method,
             params
         }
-        beacon.contentWindow.postMessage(message)
+        beacon.contentWindow?.postMessage(message, appOrigin)
     }
 
     const relayMessageEvent = (event) => {
-        if (event.data.method?.indexOf('super-botman.chat.') !== -1) {
-            callBeaconMethod(event.data.method, event.data.params)
+        const method = typeof event.data?.method === 'string' ? event.data.method : ''
+
+        if (method.indexOf('super-botman.chat.') === 0) {
+            callBeaconMethod(method, event.data.params)
         }
-        if (event.data.method?.indexOf('super-botman.beacon.') !== -1) {
-            callChatMethod(event.data.method, event.data.params)
+        if (method.indexOf('super-botman.beacon.') === 0) {
+            callChatMethod(method, event.data.params)
+        }
+        if (method.indexOf('super-botman.widget.') === 0) {
+            callChatMethod(method, event.data.params)
         }
     }
 
@@ -249,6 +267,12 @@
             })
         },
         dock (width) {
+            // Docking reflows the embedding page (body padding); on a
+            // site we don't own that's not ours to do.
+            if (embedded) {
+                superbotmanChatWidget.open()
+                return
+            }
             dockedWidth = width || 375
             mode = 'docked'
             applyDockedPosition()
@@ -256,6 +280,9 @@
             persistWidgetState()
         },
         undock () {
+            if (embedded) {
+                return
+            }
             mode = 'popup'
             open = true
             applyPopupPosition()
@@ -286,7 +313,7 @@
 
         // Restoring docked from a prior session takes priority over
         // openByDefault — dock() opens the panel as part of its work.
-        if (persistedState.docked) {
+        if (persistedState.docked && !embedded) {
             superbotmanChatWidget.dock()
         } else if (persistedState.open === true) {
             // If the user explicitly opened or closed the widget in a
@@ -307,6 +334,14 @@
     }
 
     window.addEventListener('message', (event) => {
+        // Only our two iframes get to drive the widget. Anything else on
+        // the page — other frames, extensions, an opener — is ignored.
+        if (event.origin !== appOrigin) {
+            return
+        }
+        if (event.source !== chat.contentWindow && event.source !== beacon.contentWindow) {
+            return
+        }
         relayMessageEvent(event)
         if (event.data?.method === 'super-botman.chat.init') {
             initClient()
@@ -337,7 +372,7 @@
         }
     })
 
-    document.addEventListener('DOMContentLoaded', () => {
+    const mount = () => {
         document.body.appendChild(chat)
         document.body.appendChild(beacon)
 
@@ -351,6 +386,15 @@
             attributes: true,
             attributeFilter: ['class'],
         })
-    })
+    }
+
+    // An async loader (the embed snippet) usually executes after
+    // DOMContentLoaded has already fired, so waiting for the event
+    // would mean never mounting.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', mount)
+    } else {
+        mount()
+    }
 
 }()

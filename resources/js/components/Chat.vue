@@ -182,7 +182,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { useStore } from 'vuex'
-import { emitMessage, api, client } from '../utils'
+import { emitMessage, api, client, parentOrigin } from '../utils'
 import ChatHeader from './ChatHeader.vue'
 import ChatBody from './ChatBody.vue'
 import ChatFooter from './ChatFooter.vue'
@@ -439,14 +439,25 @@ document.addEventListener('keydown', (event) => {
 })
 
 window.addEventListener('message', (event) => {
+    // Only the window embedding us may drive the chat. For same-origin
+    // installs that's our own origin; embedded installs get the
+    // validated parent origin injected server-side.
+    if (event.origin !== parentOrigin()) {
+        return
+    }
     if (event.data?.method === 'super-botman.widget.toggle') {
         store.state.open = event.data.params.open
     }
     if (event.data?.method === 'super-botman.chat.api') {
-        api({ ...event.data.params, ...{
+        // Never honor a caller-supplied endpoint: a message sender
+        // choosing the URL would make this iframe POST the visitor's
+        // credentials wherever it likes. api() routes to configured
+        // endpoints only.
+        const { server, chatServer, ...params } = event.data.params || {}
+        api({ ...params, ...{
             callback: (data) => {
                 emitMessage('chat.api.response', data)
-            }, 
+            },
             errorHandler: (error) => {
                 emitMessage('chat.api.error', {
                     message: error.message,

@@ -137,6 +137,13 @@ const avatar = computed(() => {
 // client-side (Nova.visit) instead of a full-page load or new tab. Genuinely
 // external links, modified clicks, and explicit new-tab links pass through.
 const onMessageClick = (event) => {
+    // On an external site "same origin as this iframe" means an APP
+    // link, and the embedding page has no router to hand it to — let
+    // every link behave as the server rendered it (app links get
+    // target=_blank server-side in embed mode).
+    if (window.superbotmanWidget?.embedded) {
+        return
+    }
     const anchor = event.target.closest('a')
     if (!anchor) {
         return

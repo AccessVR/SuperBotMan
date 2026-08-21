@@ -13,7 +13,10 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { emitMessage } from '../utils'
+import { useStore } from 'vuex'
+import { emitMessage, parentOrigin } from '../utils'
+
+const store = useStore()
 
 let config = ref(window.superbotmanWidget)
 
@@ -30,8 +33,11 @@ let toggleChat = () => {
 }
 
 window.addEventListener('message', (event) => {
+    if (event.origin !== parentOrigin()) {
+        return
+    }
     if (event.data?.method === 'super-botman.widget.toggle') {
-        $store.state.open = event.data.params.open
+        store.state.open = event.data.params.open
     }
 })
 </script>
