@@ -2,6 +2,7 @@
 
 namespace OrchestrateXR\SuperBotMan;
 
+use Illuminate\Http\Request;
 use OrchestrateXR\SuperBotMan\Channels\WebChannel;
 
 /**
@@ -16,7 +17,7 @@ class AgentRegistration
     /** @var string[] */
     public array $extraMiddleware = [];
 
-    /** @var (callable(\Illuminate\Http\Request): array)|null */
+    /** @var (callable(Request): array)|null */
     public $contextResolver = null;
 
     public ?string $pathOverride = null;
@@ -41,7 +42,7 @@ class AgentRegistration
     }
 
     /**
-     * @param  callable(\Illuminate\Http\Request): array  $resolver
+     * @param  callable(Request): array  $resolver
      */
     public function context(callable $resolver): static
     {

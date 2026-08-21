@@ -55,7 +55,8 @@ If you find references to any of the above in this codebase, they're stale and s
 - `src/Models/AnonymousAgentUser.php` — placeholder Authenticatable for visitors with no host-app user record. Exists so `agent_conversations.user_id` (a non-null FK in the Laravel AI SDK schema) always has a real row to point at.
 - `database/migrations/` — drop-tables migration for the legacy `chat_*` tables and create-table migration for `super_botman_anonymous_users`.
 - `resources/js/`, `resources/views/`, `resources/css/` — the Vue widget UI (preserved verbatim from prior versions, only identifiers renamed).
-- `routes/web.php` — frame + beacon GET routes for the iframe-based widget.
+- `routes/web.php` — frame + beacon GET routes for the iframe-based widget, plus the offsite embed loader (`GET {mount}/embed/{key}.js`, outside the web group — cookieless and cacheable).
+- `src/Http/Controllers/EmbedController.php` + `resources/views/embed.blade.php` — the loader a third-party page's one-line snippet fetches. Inert (404) until the host overrides `SuperBotManConfigurator::embedContext()`. Per-request frame config flows through `frameOverrides(Request)`; hosts append validation middleware to the frame routes via `config('super-botman.frame_middleware')`. All postMessage traffic is origin-addressed (`appOrigin`/`parentOrigin`) and origin-validated on receipt; `config.embedded` switches the widget into offsite mode (no dock, no app-link interception, visitor-token auth via `X-Embed-Chat-Token`).
 
 ### Channel + AgentRegistry
 

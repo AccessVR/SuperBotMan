@@ -2,6 +2,7 @@
 
 namespace OrchestrateXR\SuperBotMan\Http\Controllers;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use OrchestrateXR\SuperBotMan\AgentContext;
@@ -84,7 +85,7 @@ class SuperBotManController
      * any conversation id resumes that conversation for whoever is
      * authenticated.
      */
-    protected function authorizeConversation(?string $conversationId, \Illuminate\Contracts\Auth\Authenticatable $user): void
+    protected function authorizeConversation(?string $conversationId, Authenticatable $user): void
     {
         if (! $conversationId) {
             return;

@@ -20,6 +20,12 @@ return [
     // The location of the chat beacon URL.
     'beaconEndpoint' => '/super-botman/beacon',
 
+    // Extra middleware for the frame + beacon GET routes, on top of the
+    // `web` group. Host apps use this to validate offsite-embed
+    // requests: resolve the embed key to a tenant, check the embedding
+    // page's origin against an allowlist, mint visitor tokens.
+    'frame_middleware' => [],
+
     // Time format to use.
     'timeFormat' => 'HH:MM',
 

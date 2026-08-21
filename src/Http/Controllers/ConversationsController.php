@@ -25,10 +25,14 @@ class ConversationsController
         $slug = (string) $request->route('slug');
         $this->ensureRegistered($slug);
 
-        $user = SuperBotMan::agentUser();
+        $userId = SuperBotMan::agentUserId();
+
+        if ($userId === null) {
+            return new JsonResponse([]);
+        }
 
         $rows = DB::table($this->table())
-            ->where($this->userColumn(), $user->getAuthIdentifier())
+            ->where($this->userColumn(), $userId)
             ->orderByDesc('updated_at')
             ->limit(50)
             ->get(['id', 'title', 'updated_at']);
@@ -52,11 +56,11 @@ class ConversationsController
         $slug = (string) $request->route('slug');
         $this->ensureRegistered($slug);
 
-        $user = SuperBotMan::agentUser();
+        $userId = SuperBotMan::agentUserId();
 
-        $conversation = DB::table($this->table())
+        $conversation = $userId === null ? null : DB::table($this->table())
             ->where('id', $id)
-            ->where($this->userColumn(), $user->getAuthIdentifier())
+            ->where($this->userColumn(), $userId)
             ->first();
 
         if (! $conversation) {
@@ -123,11 +127,11 @@ class ConversationsController
         $slug = (string) $request->route('slug');
         $this->ensureRegistered($slug);
 
-        $user = SuperBotMan::agentUser();
+        $userId = SuperBotMan::agentUserId();
 
-        $deleted = DB::table($this->table())
+        $deleted = $userId === null ? 0 : DB::table($this->table())
             ->where('id', $id)
-            ->where($this->userColumn(), $user->getAuthIdentifier())
+            ->where($this->userColumn(), $userId)
             ->delete();
 
         if (! $deleted) {
