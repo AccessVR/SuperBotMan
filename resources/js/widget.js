@@ -1,8 +1,13 @@
 !function() {
 
-    const isMobile = window.screen.width < 640
-
     let config = window.superbotmanWidget
+
+    // Which layout the panel uses. This tracks the VIEWPORT, not
+    // window.screen: a desktop window dragged narrow is as cramped as a
+    // phone, and screen.width never changes when it is. Live rather
+    // than a boot-time snapshot — see onBreakpointChange.
+    const mobileQuery = window.matchMedia('(max-width: 639px)')
+    let isMobile = mobileQuery.matches
 
     // On an external site the widget runs on a different origin than the
     // app serving the iframes, so every postMessage in either direction
@@ -20,15 +25,16 @@
     const hideBeaconClass = config.hideBeaconClass || '--hide-beacon'
     const beaconForcedHidden = () => document.body.classList.contains(hideBeaconClass)
 
-    let chatWidth = new String(isMobile ? config.mobileWidth : config.desktopWidth)
-    if (chatWidth.indexOf('%') === -1) {
-        chatWidth += 'px'
+    // A configured size is either a bare pixel count or a CSS length
+    // such as '100%'.
+    const cssSize = (value) => {
+        const size = String(value)
+
+        return size.indexOf('%') === -1 ? size + 'px' : size
     }
 
-    let chatHeight = new String(isMobile ? config.mobileHeight : config.desktopHeight)
-    if (chatHeight.indexOf('%') === -1) {
-        chatHeight += 'px'
-    }
+    const chatWidth = () => cssSize(isMobile ? config.mobileWidth : config.desktopWidth)
+    const chatHeight = () => cssSize(isMobile ? config.mobileHeight : config.desktopHeight)
 
     const appendQuery = (endpoint, pairs) => {
         const query = Object.entries(pairs)
@@ -41,6 +47,9 @@
     let frameEndpoint = config.frameEndpoint
     let beaconEndpoint = config.beaconEndpoint
 
+    // An advisory hint for hosts that render the frames differently on
+    // mobile. Fixed at boot: the frames are never reloaded, so it
+    // reflects the viewport the widget started in, not the current one.
     if (isMobile) {
         frameEndpoint = appendQuery(frameEndpoint, { mobile: 'true' })
         beaconEndpoint = appendQuery(beaconEndpoint, { mobile: 'true' })
@@ -91,8 +100,8 @@
     chat.style.bottom = isMobile ? '0' : '120px'
     chat.style.right = isMobile ? '0' : '40px'
     chat.style.zIndex = '1200'
-    chat.style.width = chatWidth
-    chat.style.height = chatHeight
+    chat.style.width = chatWidth()
+    chat.style.height = chatHeight()
     chat.style.border = 'none'
     chat.style.display = 'none'
 
@@ -116,14 +125,14 @@
         chat.style.bottom = isMobile ? '0' : '120px'
         chat.style.right = isMobile ? '0' : '40px'
         chat.style.top = ''
-        chat.style.width = chatWidth
-        chat.style.height = chatHeight
+        chat.style.width = chatWidth()
+        chat.style.height = chatHeight()
         chat.style.display = open ? 'block' : 'none'
         document.body.style.transition = ''
         document.body.style.paddingRight = ''
     }
 
-    const dockedMargin = isMobile ? 0 : 16
+    let dockedMargin = isMobile ? 0 : 16
 
     // Fixed host chrome (the account bar, a maintenance banner) publishes its
     // height as a CSS variable on <html>. A docked panel reads it so it tucks
@@ -170,6 +179,26 @@
         if (mode === 'docked') {
             applyDockedPosition()
         }
+    }
+
+    // The widget outlives any single viewport size: a window dragged
+    // across the breakpoint, a tablet rotated, a phone's URL bar
+    // collapsing. Without this the panel keeps whichever geometry it
+    // booted with — a desktop-sized popup on a phone-width viewport,
+    // or a full-bleed panel swallowing a widened window.
+    const onBreakpointChange = () => {
+        isMobile = mobileQuery.matches
+        dockedMargin = isMobile ? 0 : 16
+        beacon.style.bottom = isMobile ? '13px' : '33px'
+        beacon.style.right = isMobile ? '13px' : '33px'
+
+        if (mode === 'docked') {
+            applyDockedPosition()
+
+            return
+        }
+
+        applyPopupPosition()
     }
 
     const callChatMethod = (method, params) => {
@@ -377,6 +406,8 @@
         document.body.appendChild(beacon)
 
         reconcileHostChrome()
+
+        mobileQuery.addEventListener('change', onBreakpointChange)
 
         // The host can add/remove classes at runtime (e.g. opening an embedded
         // player, or showing the account bar / maintenance banner), so watch
