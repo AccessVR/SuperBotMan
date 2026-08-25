@@ -2,6 +2,12 @@
 
 All notable changes to `super-botman` (formerly `botman-chat-sdk`) will be documented in this file.
 
+## [0.2.1] — Responsive breakpoint
+
+### Fixed
+
+- **The mobile/desktop breakpoint is live, and measures the viewport.** `widget.js` chose its layout once at load from `window.screen.width` — the physical screen, which never changes when a window is resized and says nothing about how much room the page actually has. A desktop window dragged narrow kept the 375×650 popup instead of going full-bleed, and a device-emulation session only picked up the right geometry after a reload. It now reads `matchMedia('(max-width: 639px)')` and re-applies the panel, beacon, and docked-margin geometry whenever the breakpoint flips. The `mobile=true` hint on the frame URLs still reflects the viewport at boot: the frames are not reloaded on a change, and nothing in the package reads the parameter.
+
 ## [0.2.0] — Offsite embedding
 
 The widget can now be embedded on external websites (different origins than the app serving it). Same-origin installs are unchanged except where noted.
