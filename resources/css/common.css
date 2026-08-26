@@ -16,9 +16,20 @@
     display: none;
 }
 
+/* iOS Safari zooms the page when a focused field's font-size is under
+   16px, and does not zoom back out on blur — on a full-bleed mobile
+   panel that leaves the widget unusable. Touch devices get the 16px
+   that suppresses the zoom; precise pointers keep the compact size. */
+.sbm-form-field {
+    font-size: 16px;
+}
+
 @media (hover: hover) and (pointer: fine) {
     .sbm-fine-pointer-only {
         display: block;
+    }
+    .sbm-form-field {
+        font-size: 0.875rem;
     }
     .sbm-popup-chrome {
         @apply rounded-lg border overflow-hidden;

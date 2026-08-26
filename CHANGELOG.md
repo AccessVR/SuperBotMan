@@ -2,6 +2,12 @@
 
 All notable changes to `super-botman` (formerly `botman-chat-sdk`) will be documented in this file.
 
+## [0.2.2] — No zoom on focus
+
+### Fixed
+
+- **Focusing a field no longer zooms the page on iOS.** Every text field in the widget was `text-sm` (14px). iOS Safari zooms whenever a focused `input`/`textarea` computes under 16px, and does not zoom back out on blur — on a full-bleed mobile panel that left the widget unusable. The chat composer and the four Contact Support fields now carry `.sbm-form-field`, which is 16px on touch and falls back to the compact 0.875rem for precise pointers. Deliberately not fixed with `maximum-scale=1` / `user-scalable=no`: iOS has ignored those by default since iOS 10 because they break pinch-zoom for low-vision users.
+
 ## [0.2.1] — Responsive breakpoint
 
 ### Fixed
