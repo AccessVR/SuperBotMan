@@ -48,7 +48,7 @@
                         type="email"
                         autocomplete="email"
                         maxlength="255"
-                        class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 text-sm placeholder:text-gray-400"
+                        class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 sbm-form-field placeholder:text-gray-400"
                         placeholder="you@example.com"
                         :disabled="submitting"
                     />
@@ -67,7 +67,7 @@
                         type="text"
                         autocomplete="name"
                         maxlength="255"
-                        class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 text-sm placeholder:text-gray-400"
+                        class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 sbm-form-field placeholder:text-gray-400"
                         :disabled="submitting"
                     />
                     <p v-if="fieldError('name')" class="text-xs text-red-500">
@@ -85,7 +85,7 @@
                     v-model.trim="subject"
                     type="text"
                     maxlength="200"
-                    class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 text-sm placeholder:text-gray-400"
+                    class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 sbm-form-field placeholder:text-gray-400"
                     placeholder="A short summary"
                     :disabled="submitting"
                 />
@@ -103,7 +103,7 @@
                     v-model.trim="body"
                     rows="5"
                     maxlength="8000"
-                    class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 resize-none text-sm placeholder:text-gray-400"
+                    class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 resize-none sbm-form-field placeholder:text-gray-400"
                     placeholder="Describe what you were doing and what went wrong"
                     :disabled="submitting"
                 ></textarea>

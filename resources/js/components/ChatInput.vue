@@ -3,7 +3,7 @@
         <textarea
             ref="textarea"
             rows="1"
-            class="block w-full pl-4 pr-12 py-3 bg-transparent border-none outline-none focus:outline-none focus:ring-0 active:outline-none resize-none text-sm leading-5 max-h-32 overflow-y-auto rounded-3xl placeholder:text-gray-400"
+            class="block w-full pl-4 pr-12 py-3 bg-transparent border-none outline-none focus:outline-none focus:ring-0 active:outline-none resize-none sbm-form-field leading-5 max-h-32 overflow-y-auto rounded-3xl placeholder:text-gray-400"
             @input="onInput"
             @keydown="onKeyDown"
             :placeholder="$store.state.config.placeholderText"

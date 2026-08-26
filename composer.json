@@ -1,6 +1,6 @@
 {
     "name": "orchestratexr/super-botman",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "description": "Drop-in chat-widget UI and multi-channel adapter framework on top of the Laravel AI SDK.",
     "keywords": [
         "laravel",
