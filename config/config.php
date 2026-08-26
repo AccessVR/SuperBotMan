@@ -7,18 +7,58 @@
  *   php artisan vendor:publish --tag=super-botman-config
  */
 
+// Base URL path segment shared by every SuperBotMan route: the agent
+// mount point plus the frame, beacon, and console pages. Host apps
+// override this to brand their URLs (e.g. 'paloma' → /paloma/chat).
+$path = env('SUPER_BOTMAN_PATH', 'super-botman');
+
 return [
+    'path' => $path,
+
     // The route prefix under which SuperBotMan auto-mounts agent
     // endpoints. Each registered agent gets a slug appended:
     // POST {mount}/{slug}, plus conversation history routes when the
     // channel supports them.
-    'mount' => '/super-botman',
+    'mount' => '/'.$path,
+
+    // How agent turns run. 'sync' answers the chat POST with the finished
+    // reply (simple, but the whole turn lives inside one HTTP request and
+    // its execution ceilings). 'queue' dispatches a RunAgentTurn job and
+    // acks immediately; the reply broadcasts on the conversation's private
+    // channel (config: activity.channel) as super-botman.turn.completed /
+    // .failed, with the widget polling conversation history when no
+    // websocket connection is available. Queue mode requires a running
+    // queue worker and, ideally, broadcasting.
+    'dispatch' => env('SUPER_BOTMAN_DISPATCH', 'sync'),
+
+    // Queue (and optionally connection) for RunAgentTurn jobs. Point this
+    // at a dedicated queue when workers that don't run this codebase might
+    // share the same queue backend (e.g. several checkouts on one
+    // database) — a foreign worker that picks up a turn job fails it as an
+    // unknown class and the reply is silently lost. Null = default queue.
+    'queue' => env('SUPER_BOTMAN_QUEUE'),
+    'queue_connection' => env('SUPER_BOTMAN_QUEUE_CONNECTION'),
+
+    // Soft-delete conversations instead of hard-deleting: a user's
+    // "delete" sets agent_conversations.deleted_at (the host must add
+    // that nullable timestamp column via its own migration) and every
+    // package read excludes soft-deleted rows. Off by default so hosts
+    // without the column keep working.
+    'conversationSoftDeletes' => false,
 
     // The location of the chat frame URL.
-    'frameEndpoint' => '/super-botman/chat',
+    'frameEndpoint' => '/'.$path.'/chat',
+
+    // Full-screen chat console: a standalone page (sidebar with the
+    // user's conversations + a wide transcript) reusing the widget's
+    // transport and message components. `consolePage` pins it to one
+    // conversational page id from `pages`.
+    'consoleEnabled' => true,
+    'consoleEndpoint' => '/'.$path.'/console',
+    'consolePage' => 'chat',
 
     // The location of the chat beacon URL.
-    'beaconEndpoint' => '/super-botman/beacon',
+    'beaconEndpoint' => '/'.$path.'/beacon',
 
     // Extra middleware for the frame + beacon GET routes, on top of the
     // `web` group. Host apps use this to validate offsite-embed

@@ -4,12 +4,12 @@ namespace OrchestrateXR\SuperBotMan\Channels;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use OrchestrateXR\SuperBotMan\AgentRunResult;
 use OrchestrateXR\SuperBotMan\ClientActionBag;
 use OrchestrateXR\SuperBotMan\Contracts\Channel;
 use OrchestrateXR\SuperBotMan\Contracts\SuperBotManConfigurator;
 use OrchestrateXR\SuperBotMan\InboundMessage;
+use OrchestrateXR\SuperBotMan\Support\WebMessages;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -40,32 +40,9 @@ class WebChannel implements Channel
 
     public function outbound(AgentRunResult $result, ClientActionBag $actions, InboundMessage $inbound): Response
     {
-        $messages = [];
-
-        if ($result->text !== '') {
-            $messages[] = [
-                'type' => 'text',
-                'text' => $this->config->renderAssistantText($result->text),
-            ];
-        }
-
-        foreach ($actions->all() as $action) {
-            $messages[] = $action->toArray();
-        }
-
-        // Always emit a setConversationId client action last so the
-        // widget can thread the conversation id back into subsequent
-        // requests via its inbound `context` field.
-        $messages[] = [
-            'type' => 'client_action',
-            'action' => 'setConversationId',
-            'payload' => [
-                'id' => $result->conversationId,
-                'title' => $result->conversationTitle ?? Str::limit($inbound->message, 60),
-            ],
-        ];
-
-        return new JsonResponse(['messages' => $messages]);
+        return new JsonResponse([
+            'messages' => WebMessages::for($result, $actions, $inbound->message),
+        ]);
     }
 
     public function middleware(): array

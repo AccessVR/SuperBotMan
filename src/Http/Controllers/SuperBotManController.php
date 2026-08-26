@@ -11,6 +11,7 @@ use OrchestrateXR\SuperBotMan\ClientActionBag;
 use OrchestrateXR\SuperBotMan\Contracts\AgentDispatcher;
 use OrchestrateXR\SuperBotMan\Contracts\Channel;
 use OrchestrateXR\SuperBotMan\Facades\SuperBotMan;
+use OrchestrateXR\SuperBotMan\Jobs\RunAgentTurn;
 use OrchestrateXR\SuperBotMan\Support\ConversationTitler;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -45,6 +46,10 @@ class SuperBotManController
         // pages, not just the current one.
         $prompt = SuperBotMan::renderUserPrompt($inbound->message, $context->all());
 
+        if (config('super-botman.dispatch', 'sync') === 'queue') {
+            return $this->queueTurn($registration, $prompt, $inbound, $context, $request);
+        }
+
         $result = $dispatcher->dispatch(
             agentClass: $registration->agentClass,
             prompt: $prompt,
@@ -59,6 +64,67 @@ class SuperBotManController
         ConversationTitler::backfillAfterResponse($result->conversationId, $inbound->message);
 
         return $channel->outbound($result, $bag, $inbound);
+    }
+
+    /**
+     * Queued dispatch: the agent turn runs on a worker (no HTTP execution
+     * ceiling) and the reply arrives over the conversation's private
+     * broadcast channel. The response acks immediately with the
+     * conversation id so the widget can subscribe / poll for the outcome.
+     */
+    protected function queueTurn(AgentRegistration $registration, string $prompt, $inbound, AgentContext $context, Request $request): Response
+    {
+        // A turn needs a conversation row before it runs — both for the
+        // broadcast channel name and so the widget can poll history. The
+        // widget's prepare call normally minted one already; cover the
+        // first-message-without-prepare path (e.g. websockets unavailable).
+        $conversationId = $inbound->conversationId ?: $this->mintConversation($inbound->agentUser);
+
+        $pending = RunAgentTurn::dispatch(
+            agentClass: $registration->agentClass,
+            prompt: $prompt,
+            user: $inbound->agentUser,
+            conversationId: $conversationId,
+            context: $context->all(),
+            userMessage: $inbound->message,
+            // Session-derived authorization state the worker can't reach —
+            // captured here, restored by the job via prepareQueuedTurn().
+            turnContext: SuperBotMan::captureQueuedTurnContext($request),
+        );
+
+        // A dedicated queue keeps turns away from workers that don't run
+        // this codebase (e.g. several checkouts sharing one database).
+        if ($queue = config('super-botman.queue')) {
+            $pending->onQueue($queue);
+        }
+        if ($connection = config('super-botman.queue_connection')) {
+            $pending->onConnection($connection);
+        }
+
+        return new \Illuminate\Http\JsonResponse([
+            'messages' => [
+                [
+                    'type' => 'client_action',
+                    'action' => 'turnQueued',
+                    'payload' => ['id' => $conversationId],
+                ],
+            ],
+        ], 202);
+    }
+
+    protected function mintConversation(\Illuminate\Contracts\Auth\Authenticatable $user): string
+    {
+        $conversationId = (string) \Illuminate\Support\Str::uuid7();
+
+        DB::table(config('super-botman.agent_conversations_table', 'agent_conversations'))->insert([
+            'id' => $conversationId,
+            config('super-botman.agent_conversations_user_column', 'user_id') => $user->getAuthIdentifier(),
+            'title' => '',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $conversationId;
     }
 
     protected function resolveRegistration(Request $request): AgentRegistration
