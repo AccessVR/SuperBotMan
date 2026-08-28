@@ -2,6 +2,14 @@
 
 Guidance for Claude Code working in this repository.
 
+## Where this code lives
+
+This package is developed inside OrchestrateXR's application repo, at
+`lib/orchestratexr/super-botman`, and mirrored to the public
+`AccessVR/SuperBotMan` repo by `git subtree split` on merge. If you are reading
+this in the mirror, changes belong upstream — the mirror is read-only and a
+direct push will be overwritten by the next publish.
+
 ## Overview
 
 `orchestratexr/super-botman` is a Laravel package that gives any host app a drop-in chat-widget UI plus a thin multi-channel adapter framework on top of the **Laravel AI SDK** (`laravel/ai`, namespace `Laravel\Ai`).

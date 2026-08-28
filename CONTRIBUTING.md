@@ -4,6 +4,15 @@ Contributions are **welcome** and will be fully **credited**.
 
 Please read and understand the contribution guide before creating an issue or pull request.
 
+> **This repository is a read-only mirror.** SuperBotMan is developed inside
+> OrchestrateXR's application repo and published here automatically by
+> `git subtree split` on every merge. Pull requests opened against this
+> repository cannot be merged — the next publish would overwrite them. Please
+> open an issue describing the change and a maintainer will carry the patch
+> upstream, crediting you. Issues, discussions, and bug reports are very welcome
+> here.
+
+
 ## Etiquette
 
 This project is open source, and as such, the maintainers give their free time to build and maintain the source code

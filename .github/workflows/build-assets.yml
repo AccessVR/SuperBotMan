@@ -38,11 +38,22 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Create and push tag
+      # Every publish from upstream lands here as a push to main, but only
+      # a version bump is a release. Re-tagging an existing version would
+      # be rejected and turn this red on ordinary changes, so a version
+      # that is already tagged is simply nothing to do.
+      - name: Tag the release, if this version is new
         run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+
+          if git ls-remote --exit-code --tags origin "v$VERSION" >/dev/null 2>&1; then
+            echo "v$VERSION is already tagged — no release to cut."
+            exit 0
+          fi
+
           git add public/build -f
-          git commit -m "Build assets for version ${{ steps.get_version.outputs.version }}" || echo "No changes to commit"
-          git tag -a "v${{ steps.get_version.outputs.version }}" -m "Version ${{ steps.get_version.outputs.version }}"
-          git push origin "v${{ steps.get_version.outputs.version }}"
+          git commit -m "Build assets for version $VERSION" || echo "No changes to commit"
+          git tag -a "v$VERSION" -m "Version $VERSION"
+          git push origin "v$VERSION"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

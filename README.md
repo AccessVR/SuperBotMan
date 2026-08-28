@@ -3,6 +3,14 @@
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/orchestratexr/super-botman.svg?style=flat-square)](https://packagist.org/packages/orchestratexr/super-botman)
 [![License](https://img.shields.io/github/license/AccessVR/SuperBotMan)](https://github.com/AccessVR/SuperBotMan/blob/main/LICENSE.md)
 
+> **This repository is a read-only mirror.** SuperBotMan is developed inside
+> OrchestrateXR's application repo and published here automatically by
+> `git subtree split` on every merge. Pull requests opened against this
+> repository cannot be merged — the next publish would overwrite them. Please
+> open an issue describing the change and a maintainer will carry the patch
+> upstream, crediting you. Issues, discussions, and bug reports are very welcome
+> here.
+
 A Laravel package that gives any host app a drop-in chat-widget UI plus a thin multi-channel adapter framework on top of the [Laravel AI SDK](https://github.com/laravel/ai).
 
 SuperBotMan is the evolution of the prior `orchestratexr/botman-chat-sdk` package. The widget UI carried over; the LLM back-end (previously a hand-rolled BotMan + LLPhant integration) has been replaced by `laravel/ai`. See [`CHANGELOG.md`](CHANGELOG.md) for the full break-down — anything BotMan- or LLPhant-related is gone.

@@ -59,5 +59,9 @@
                 "SuperBotMan": "OrchestrateXR\\SuperBotMan\\Facades\\SuperBotMan"
             }
         }
+    },
+    "support": {
+        "issues": "https://github.com/AccessVR/SuperBotMan/issues",
+        "source": "https://github.com/AccessVR/SuperBotMan"
     }
 }
