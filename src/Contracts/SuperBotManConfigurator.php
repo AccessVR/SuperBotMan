@@ -140,4 +140,32 @@ interface SuperBotManConfigurator
      * actually typed.
      */
     public function renderUserText(string $text): string;
+
+    /**
+     * Capture request-scoped state a queued turn needs to reproduce on
+     * the worker — state the HTTP middleware normally derives from the
+     * session (an active tenant/team id, locale, ...) that a queue
+     * worker cannot reach. Called at dispatch time; the returned array
+     * rides the job and is handed back to prepareQueuedTurn().
+     *
+     * @return array<string, mixed>
+     */
+    public function captureQueuedTurnContext(Request $request): array;
+
+    /**
+     * Recreate the captured request state on the queue worker before
+     * the agent turn runs. RunAgentTurn has already authenticated
+     * $user on the default guard; hosts restore whatever else their
+     * authorization layer reads globally (e.g. a team/tenant id).
+     *
+     * @param  array<string, mixed>  $turnContext
+     */
+    public function prepareQueuedTurn(Authenticatable $user, array $turnContext): void;
+
+    /**
+     * Undo prepareQueuedTurn() after the turn finishes (success or
+     * failure) so a long-lived worker process leaks nothing into its
+     * next job.
+     */
+    public function cleanupQueuedTurn(): void;
 }

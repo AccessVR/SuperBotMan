@@ -340,9 +340,15 @@
     const initClient = () => {
         window.superbotmanChatWidget = superbotmanChatWidget
 
-        // Restoring docked from a prior session takes priority over
-        // openByDefault — dock() opens the panel as part of its work.
-        if (persistedState.docked && !embedded) {
+        // Pages that force-hide the beacon (the experience player, the
+        // editor's nested preview) must not restore an open panel either:
+        // with no badge there is no way to close or reopen it. The
+        // persisted state is left untouched for the next ordinary page.
+        if (beaconForcedHidden()) {
+            // leave the panel closed on this page
+        } else if (persistedState.docked && !embedded) {
+            // Restoring docked from a prior session takes priority over
+            // openByDefault — dock() opens the panel as part of its work.
             superbotmanChatWidget.dock()
         } else if (persistedState.open === true) {
             // If the user explicitly opened or closed the widget in a

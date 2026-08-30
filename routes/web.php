@@ -24,6 +24,12 @@ Route::middleware(array_merge(['web'], (array) config('super-botman.frame_middle
         return SuperBotMan::view('beacon', ['config' => SuperBotMan::frameOverrides($request)]);
     })->name('super-botman.beacon');
 
+    if (SuperBotMan::config('consoleEnabled')) {
+        Route::get(SuperBotMan::config('consoleEndpoint'), function () {
+            return SuperBotMan::view('console', ['config' => []]);
+        })->name('super-botman.console');
+    }
+
     // Agent endpoint routes and conversation-history routes are
     // registered by SuperBotManServiceProvider after the agent
     // registry has been populated. Added in commit 2.

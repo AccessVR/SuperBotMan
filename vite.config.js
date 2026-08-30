@@ -10,6 +10,7 @@ export default defineConfig({
             'resources/js/chat.js',
             'resources/js/beacon.js',
             'resources/js/widget.js',
+            'resources/js/console.js',
           ],
           refresh: true,
         }),

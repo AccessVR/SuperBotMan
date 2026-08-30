@@ -65,7 +65,12 @@ class ConversationTitler
             );
 
             return Str::limit(trim((string) $response->text), 100) ?: Str::limit($message, 100, preserveWords: true);
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            // The truncation fallback keeps the UI working, but a silently
+            // swallowed failure here means every title is a truncated prompt
+            // and nobody knows generation is broken — surface it.
+            report($e);
+
             return Str::limit($message, 100, preserveWords: true);
         }
     }

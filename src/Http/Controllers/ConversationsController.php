@@ -33,6 +33,7 @@ class ConversationsController
 
         $rows = DB::table($this->table())
             ->where($this->userColumn(), $userId)
+            ->when($this->softDeletes(), fn ($query) => $query->whereNull('deleted_at'))
             ->orderByDesc('updated_at')
             ->limit(50)
             ->get(['id', 'title', 'updated_at']);
@@ -61,6 +62,7 @@ class ConversationsController
         $conversation = $userId === null ? null : DB::table($this->table())
             ->where('id', $id)
             ->where($this->userColumn(), $userId)
+            ->when($this->softDeletes(), fn ($query) => $query->whereNull('deleted_at'))
             ->first();
 
         if (! $conversation) {
@@ -129,16 +131,29 @@ class ConversationsController
 
         $userId = SuperBotMan::agentUserId();
 
-        $deleted = $userId === null ? 0 : DB::table($this->table())
+        $query = $userId === null ? null : DB::table($this->table())
             ->where('id', $id)
-            ->where($this->userColumn(), $userId)
-            ->delete();
+            ->where($this->userColumn(), $userId);
+
+        // With soft deletes on (host opts in after adding a deleted_at
+        // column), "delete" hides the conversation from the user but keeps
+        // the history recoverable by admins; without it, the row is gone.
+        $deleted = match (true) {
+            $query === null => 0,
+            $this->softDeletes() => $query->whereNull('deleted_at')->update(['deleted_at' => now()]),
+            default => $query->delete(),
+        };
 
         if (! $deleted) {
             throw new HttpException(404);
         }
 
         return new JsonResponse(['deleted' => true]);
+    }
+
+    protected function softDeletes(): bool
+    {
+        return (bool) SuperBotMan::config('conversationSoftDeletes');
     }
 
     /**

@@ -1,10 +1,9 @@
 import { createApp } from 'vue'
 import { createStore } from 'vuex'
 import Chat from './components/Chat.vue'
-import { v4 as uuidv4 } from 'uuid'
-import Echo from 'laravel-echo'
-import Pusher from 'pusher-js'
 import { client } from './utils'
+import { connectEcho } from './echo'
+import { seedDefaultPages, chatStoreOptions } from './store'
 
 const app = createApp(Chat)
 
@@ -38,38 +37,8 @@ if (config.embedded && config.embedToken) {
     }
 }
 
-// The widget lives in its own iframe, so the host page's Echo instance
-// (if any) is out of reach — build our own connection when the host
-// supplies one via config.activity.echo (public key + host only; auth
-// rides the same-origin /broadcasting/auth with session cookies).
-const echoConfig = config.activity?.echo
-if (echoConfig?.key && !window.Echo) {
-    window.Pusher = Pusher
-    window.Echo = new Echo({
-        broadcaster: echoConfig.broadcaster || 'reverb',
-        key: echoConfig.key,
-        wsHost: echoConfig.host,
-        wsPort: echoConfig.port ?? 443,
-        wssPort: echoConfig.port ?? 443,
-        forceTLS: (echoConfig.scheme ?? 'https') === 'https',
-        enabledTransports: ['ws', 'wss'],
-    })
-}
-
-// add default page
-if (!config.pages?.length) {
-    config.pages = [
-        {
-            id: 'chat',
-            title: 'Chat',
-            buttonTitle: 'Chat with our bot',
-            buttonDescription: 'Available to help 24/7',
-            icon: config.icons.bot,
-            introMessage: config.introMessage,
-            chatServer: config.chatServer,
-        }
-    ]
-}
+connectEcho(config)
+seedDefaultPages(config)
 
 // Hydrate prior conversation state from localStorage so navigating
 // between host-app pages (which can re-mount the widget iframe and
@@ -108,106 +77,15 @@ if (persisted.context?.conversationId) {
     }
 }
 
-const store = createStore({
-    state: {
-        config,
-        open: false,
-        docked: persisted.docked ?? false,
-        context: persisted.context || {},
-        title: null,
-        page: persisted.page || null,
-        messages: config.pages.reduce((messages, page) => { messages[page.id] = []; return messages }, {}),
-        conversation: null,
-        conversationId: persisted.conversationId || {},
-        conversations: {},
-        input: {
-            text: '',
-            attachment: null,
-        },
-        showChatInput: false,
-        loading: false,
-        waiting: false,
-        error: false,
-        // Live agent-activity label ("Listing experiences…") broadcast by
-        // the host while a reply is being generated; shown beside the
-        // typing indicator. Null when idle or when Echo is unavailable.
-        activity: null,
-    },
-    getters: {
-        chatServer: (state) => (pageId) => {
-            return state.config.pages.find(page => page.id === pageId)?.chatServer || state.config.chatServer
-        },
-        showBackButton(state) {
-            return state.page !== 'home'
-        },
-    },
-    mutations: {
-        resetInput(state) {
-            state.input.text = ''
-            state.input.attachment = null
-        },
-        page(state, pageId) {
-            state.page = pageId
-            if (pageId !== 'home') {
-                state.context = { ...state.context, pageId }
-                window.superbotmanWidget.context = { ...window.superbotmanWidget.context, pageId }
-            }
-        },
-        messages(state, { message, pageId }) {
-            let data = typeof message === 'string' ? { text: message } : message
-            if (typeof data.id === "undefined") {
-                data.id = uuidv4()
-            }
-            if (typeof data.time === "undefined") {
-                data.time = new Date().getTime()
-            }
-            state.messages[pageId || state.page].push(data)
-        },
-        loading(state, value) {
-            state.loading = value
-            if (!value) {
-                state.activity = null
-            }
-        },
-        activity(state, value) {
-            state.activity = value
-        },
-        waiting(state, value) {
-            state.waiting = value
-        },
-        error(state, value) {
-            state.error = value
-        },
-        docked(state, value) {
-            state.docked = value
-        },
-        context(state, data) {
-            // MERGE incoming context fields, don't replace. Host apps
-            // typically push partial updates from a page-navigation
-            // hook (e.g. {url, path, resourceName, resourceId}) and
-            // expect previously-threaded values like conversationId to
-            // survive. Wholesale replace drops the active thread on
-            // every host navigation.
-            state.context = { ...state.context, ...data }
-            window.superbotmanWidget.context = { ...window.superbotmanWidget.context, ...data }
-        },
-        conversationId(state, { pageId, conversationId }) {
-            state.conversationId[pageId] = conversationId
-            state.context = { ...state.context, conversationId }
-            window.superbotmanWidget.context = { ...window.superbotmanWidget.context, conversationId }
-        },
-        conversations(state, { pageId, conversations }) {
-            state.conversations[pageId] = conversations
-        },
-        clearConversation(state, pageId) {
-            state.messages[pageId] = []
-            state.conversationId[pageId] = null
-            const { conversationId, ...rest } = state.context
-            state.context = rest
-            window.superbotmanWidget.context = { ...rest }
-        },
-    },
-})
+// Seed only the widget's persisted slice — the same storage key also
+// carries the `open` flag widget.js writes, which must NOT seed the
+// store (the parent window drives open state via postMessage).
+const store = createStore(chatStoreOptions(config, {
+    docked: persisted.docked,
+    context: persisted.context,
+    page: persisted.page,
+    conversationId: persisted.conversationId,
+}))
 
 // Persist a slim slice of state on every mutation so the next page
 // load (or browser-tab reopen) can rehydrate the active thread.

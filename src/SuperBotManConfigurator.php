@@ -256,6 +256,33 @@ class SuperBotManConfigurator implements SuperBotManConfiguratorContract
     }
 
     /**
+     * Hosts with session-derived authorization state (an active
+     * tenant/team id, locale, ...) override this trio so queued turns
+     * run with the same context the sync HTTP path gets from its
+     * middleware. The defaults assume authenticating the user (which
+     * RunAgentTurn does on the default guard) is enough.
+     *
+     * @return array<string, mixed>
+     */
+    public function captureQueuedTurnContext(Request $request): array
+    {
+        return [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $turnContext
+     */
+    public function prepareQueuedTurn(Authenticatable $user, array $turnContext): void
+    {
+        // Intentionally empty — see captureQueuedTurnContext().
+    }
+
+    public function cleanupQueuedTurn(): void
+    {
+        // Intentionally empty — see captureQueuedTurnContext().
+    }
+
+    /**
      * Render the widget's icon set with the given stroke color. Kept
      * separate from config()'s memoized array so a per-request override
      * of beaconLabelColor (per-tenant branding) can re-render icons

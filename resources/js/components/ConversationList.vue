@@ -7,7 +7,7 @@
             v-for="conversation in conversations"
             :key="conversation.id"
             class="flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-gray-50 border border-gray-200 bg-white mb-2"
-            @click="resumeConversation(conversation.id)"
+            @click="onResume(conversation.id)"
         >
             <div class="shrink-0 text-gray-400">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -36,25 +36,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useStore } from 'vuex'
-import { client } from '../utils'
+import { useConversations } from '../composables/useConversations'
 
 const emit = defineEmits(['resume'])
 
 const store = useStore()
-const conversations = ref([])
 
-// Per-page conversations endpoint, falling back to the widget-level
-// default. The host app supplies this via the registered agent's
-// channel — there's no hardcoded "/botman/conversations" anymore.
-const conversationsEndpoint = computed(() => {
-    const pageId = store.state.page
-    const page = store.state.config.pages?.find(p => p.id === pageId)
-    return page?.conversationsEndpoint
-        || store.state.config.conversationsEndpoint
-        || null
-})
+const {
+    conversations,
+    fetchConversations,
+    resumeConversation,
+    deleteConversation,
+    formatTime,
+} = useConversations(store)
 
 watch(() => store.state.page, (newPage) => {
     if (newPage === 'home') {
@@ -62,56 +58,11 @@ watch(() => store.state.page, (newPage) => {
     }
 })
 
-const fetchConversations = async () => {
-    if (!conversationsEndpoint.value) {
-        conversations.value = []
-        return
+const onResume = async (id) => {
+    const conversation = await resumeConversation(id)
+    if (conversation) {
+        emit('resume', conversation)
     }
-    try {
-        const response = await client().get(conversationsEndpoint.value)
-        conversations.value = response.data
-    } catch (e) {
-        console.error('Failed to fetch conversations', e)
-    }
-}
-
-const resumeConversation = async (id) => {
-    if (!conversationsEndpoint.value) return
-    try {
-        const response = await client().get(`${conversationsEndpoint.value}/${id}`)
-        emit('resume', response.data)
-    } catch (e) {
-        console.error('Failed to load conversation', e)
-    }
-}
-
-const deleteConversation = async (id) => {
-    if (!conversationsEndpoint.value) return
-    try {
-        await client().delete(`${conversationsEndpoint.value}/${id}`)
-        conversations.value = conversations.value.filter(c => c.id !== id)
-    } catch (e) {
-        console.error('Failed to delete conversation', e)
-    }
-}
-
-const formatTime = (isoString) => {
-    if (!isoString) return ''
-    const date = new Date(isoString)
-    const now = new Date()
-    const diffMs = now - date
-    const diffMins = Math.floor(diffMs / 60000)
-
-    if (diffMins < 1) return 'just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-
-    const diffHours = Math.floor(diffMins / 60)
-    if (diffHours < 24) return `${diffHours}h ago`
-
-    const diffDays = Math.floor(diffHours / 24)
-    if (diffDays < 7) return `${diffDays}d ago`
-
-    return date.toLocaleDateString()
 }
 
 onMounted(fetchConversations)
