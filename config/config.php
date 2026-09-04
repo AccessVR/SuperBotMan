@@ -134,6 +134,32 @@ return [
     // with `linkColor` to give a familiar "this is a link" cue.
     'linkUnderline' => true,
 
+    // How the widget decides between its light and dark looks.
+    //   'light' / 'dark' — pinned to one theme.
+    //   'class' — follow a dark class on the host page's <html> element
+    //             (the Tailwind class convention; see themeDarkClass).
+    //             The widget re-themes live when the class is toggled.
+    //   'media' — follow the visitor's OS preference, live.
+    // The standalone console page has no host document, so under 'class'
+    // and 'media' it follows the OS preference; a ?theme=dark|light query
+    // on any frame or console URL overrides everything at boot.
+    'theme' => 'light',
+
+    // The class name `theme => 'class'` watches for on the host <html>.
+    'themeDarkClass' => 'dark',
+
+    // Per-theme overrides for the widget's neutral palette. Each entry
+    // maps a token to a CSS color; tokens are the --sbm-* custom
+    // properties without the prefix: page, surface, surface-soft,
+    // surface-strong, ink, ink-soft, ink-muted, edge, main, on-main,
+    // link-color. Anything not overridden keeps the built-in default for
+    // that theme (see resources/css/common.css); `main` defaults to
+    // mainColor and `link-color` to linkColor.
+    'palette' => [
+        'light' => [],
+        'dark' => [],
+    ],
+
     // Height to use for embedded videos.
     'videoHeight' => 160,
 

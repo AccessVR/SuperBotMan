@@ -44,6 +44,32 @@
         return endpoint + (endpoint.indexOf('?') === -1 ? '?' : '&') + query
     }
 
+    // Theme. 'light' / 'dark' pin the widget; 'class' follows a dark
+    // class on the host <html> (the Tailwind class convention — the
+    // class name itself is configurable); 'media' follows the OS
+    // preference. The resolved theme rides the frame URLs at boot (so a
+    // frame never paints in the wrong theme) and is re-relayed as a
+    // message whenever the host flips.
+    const themeMode = config.theme || 'light'
+    const themeDarkClass = config.themeDarkClass || 'dark'
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
+
+    const resolveDark = () => {
+        if (themeMode === 'dark') {
+            return true
+        }
+        if (themeMode === 'class') {
+            return document.documentElement.classList.contains(themeDarkClass)
+        }
+        if (themeMode === 'media') {
+            return prefersDark.matches
+        }
+
+        return false
+    }
+
+    let themeDark = resolveDark()
+
     let frameEndpoint = config.frameEndpoint
     let beaconEndpoint = config.beaconEndpoint
 
@@ -54,6 +80,9 @@
         frameEndpoint = appendQuery(frameEndpoint, { mobile: 'true' })
         beaconEndpoint = appendQuery(beaconEndpoint, { mobile: 'true' })
     }
+
+    frameEndpoint = appendQuery(frameEndpoint, { theme: themeDark ? 'dark' : 'light' })
+    beaconEndpoint = appendQuery(beaconEndpoint, { theme: themeDark ? 'dark' : 'light' })
 
     // Tell the frames who is embedding them. The server validates this
     // against the organization's allowed domains and echoes it back into
@@ -255,6 +284,21 @@
         })
     }
 
+    // Push the current theme into both frames. Also called on demand so a
+    // frame that (re)initializes after a flip still converges.
+    const publishTheme = () => {
+        callChatMethod('super-botman.widget.theme', { dark: themeDark })
+    }
+
+    const refreshTheme = () => {
+        const dark = resolveDark()
+
+        if (dark !== themeDark) {
+            themeDark = dark
+            publishTheme()
+        }
+    }
+
     const superbotmanChatWidget = {
         open () {
             open = true
@@ -321,6 +365,12 @@
         context (data) {
             callChatMethod('super-botman.chat.context', data)
         },
+        // Drive the theme directly ('dark' / 'light'), for hosts whose
+        // theme lives somewhere none of the config modes can see.
+        theme (value) {
+            themeDark = value === 'dark'
+            publishTheme()
+        },
         startConversation (text, options = {}) {
             // Make sure the panel is visible before we hand control to
             // the iframe; the user can't act on a preloaded prompt they
@@ -380,6 +430,9 @@
         relayMessageEvent(event)
         if (event.data?.method === 'super-botman.chat.init') {
             initClient()
+            // A frame booted (or re-booted) with the theme its URL carried;
+            // re-publish in case the host flipped since that URL was built.
+            publishTheme()
         }
         if (event.data?.method === 'super-botman.beacon.click') {
             superbotmanChatWidget.toggle()
@@ -423,6 +476,17 @@
             attributes: true,
             attributeFilter: ['class'],
         })
+
+        // Follow the host's theme source live: the dark class on <html>
+        // (a theme switcher toggling it), or the OS preference.
+        if (themeMode === 'class') {
+            new MutationObserver(refreshTheme).observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['class'],
+            })
+        } else if (themeMode === 'media') {
+            prefersDark.addEventListener('change', refreshTheme)
+        }
     }
 
     // An async loader (the embed snippet) usually executes after

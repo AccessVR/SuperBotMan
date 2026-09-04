@@ -1,15 +1,12 @@
 <template>
     <div
         :class="[
-            'shrink-0 p-2 relative sbm-header-chrome',
+            'shrink-0 p-2 relative sbm-header-chrome bg-sbm-main',
             { 'sbm-undocked': !$store.state.docked }
         ]"
-        :style="{
-            backgroundColor: $store.state.config.mainColor
-        }"
     >
         <div
-            class="flex-grow text-white text-sm text-center cursor-pointer min-h-5"
+            class="flex-grow text-sbm-on-main text-sm text-center cursor-pointer min-h-5"
         >
             <slot name="content">
                 <span>{{ $store.state.title }}</span>
@@ -17,7 +14,7 @@
         </div>
         <button
             v-if="$store.getters.showBackButton"
-            class="absolute left-2 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
+            class="absolute left-2 top-1/2 -translate-y-1/2 outline-none text-sbm-on-main text-sm"
             @click.prevent="emit('back')"
         >
             <span class="icon block h-4 w-4" v-html="$store.state.config.icons.back"></span>
@@ -25,7 +22,7 @@
         </button>
         <button
             v-if="consoleUrl"
-            class="sbm-fine-pointer-only absolute right-14 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
+            class="sbm-fine-pointer-only absolute right-14 top-1/2 -translate-y-1/2 outline-none text-sbm-on-main text-sm"
             @click.prevent="openConsole"
             title="Open full-screen chat"
         >
@@ -39,7 +36,7 @@
         </button>
         <button
             v-if="$store.state.docked && !$store.state.config.embedded"
-            class="sbm-fine-pointer-only absolute right-8 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
+            class="sbm-fine-pointer-only absolute right-8 top-1/2 -translate-y-1/2 outline-none text-sbm-on-main text-sm"
             @click.prevent="emitMessage('chat.undock')"
             title="Switch to windowed mode"
         >
@@ -51,7 +48,7 @@
         </button>
         <button
             v-if="!$store.state.docked && !$store.state.config.embedded"
-            class="sbm-fine-pointer-only absolute right-8 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
+            class="sbm-fine-pointer-only absolute right-8 top-1/2 -translate-y-1/2 outline-none text-sbm-on-main text-sm"
             @click.prevent="emitMessage('chat.dock')"
             title="Dock as sidebar"
         >
@@ -62,7 +59,7 @@
             <span class="sr-only">Dock as sidebar</span>
         </button>
         <button
-            class="absolute right-2 top-1/2 -translate-y-1/2 outline-none text-white text-sm"
+            class="absolute right-2 top-1/2 -translate-y-1/2 outline-none text-sbm-on-main text-sm"
             @click.prevent="emit('close')"
         >
             <span class="icon block h-4 w-4" v-html="$store.state.config.icons.close"></span>

@@ -3,9 +3,8 @@
         <slot name="heading"></slot>
         <div
             :class="$slots.heading
-                ? 'relative w-full border-t-[50px]'
+                ? 'relative w-full border-t-[50px] border-t-sbm-main'
                 : 'relative w-full flex-1 flex flex-col'"
-            :style="$slots.heading ? { borderTopColor: $store.state.config.mainColor } : {}"
         >
             <div
                 :class="$slots.heading

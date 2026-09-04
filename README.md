@@ -172,6 +172,30 @@ The same agent code runs over either transport.
 
 `config/super-botman.php` (after publishing) covers the widget's appearance + the route mount prefix. The agent registry — *which agents exist, what URL they live at, what channel serves them* — is populated by your code calling `SuperBotMan::registerAgent(...)`, not by config.
 
+## Theming
+
+The widget ships light and dark looks, both driven by CSS custom properties (`--sbm-*`). Three config keys control them:
+
+```php
+// How the widget picks a theme:
+//   'light' / 'dark' — pinned.
+//   'class' — follow a dark class on the host page's <html>
+//             (Tailwind's class convention; name set by themeDarkClass).
+//             Re-themes live when a theme switcher toggles the class.
+//   'media' — follow the visitor's OS preference, live.
+'theme' => 'class',
+
+// Override any palette token per theme. Tokens: page, surface,
+// surface-soft, surface-strong, ink, ink-soft, ink-muted, edge,
+// main (defaults to mainColor), on-main.
+'palette' => [
+    'light' => ['page' => '#f5f2ef'],
+    'dark' => ['page' => '#16110e', 'surface' => '#2a221c'],
+],
+```
+
+Hosts whose theme lives somewhere none of the modes can see can drive it directly: `window.superbotmanChatWidget.theme('dark')`. A `?theme=dark|light` query on the console URL pins that page at boot.
+
 ## Testing
 
 ```bash

@@ -2,7 +2,7 @@
     <div class="w-full px-3 pt-2 pb-3">
         <p
             v-if="showDisclaimer"
-            class="text-xs text-black text-center mb-2"
+            class="text-xs text-sbm-ink text-center mb-2"
         >
             {{ page.disclaimer }}
         </p>

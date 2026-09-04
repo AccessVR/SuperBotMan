@@ -5,23 +5,21 @@
             class="flex-1 flex flex-col items-center justify-center px-6 text-center"
         >
             <div
-                class="rounded-full w-16 h-16 mb-6 flex items-center justify-center"
-                :style="{ backgroundColor: $store.state.config.mainColor }"
+                class="rounded-full w-16 h-16 mb-6 flex items-center justify-center bg-sbm-main"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-sbm-on-main" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
             </div>
-            <h2 class="text-xl font-bold text-gray-900 mb-2">
+            <h2 class="text-xl font-bold text-sbm-ink mb-2">
                 Request received
             </h2>
-            <p class="text-sm text-gray-600 mb-6">
+            <p class="text-sm text-sbm-ink-soft mb-6">
                 {{ confirmation }}
             </p>
             <button
                 type="button"
-                class="text-sm font-semibold underline"
-                :style="{ color: $store.state.config.mainColor }"
+                class="text-sm font-semibold underline text-sbm-main"
                 @click="reset"
             >
                 File another request
@@ -33,13 +31,13 @@
             class="flex flex-col gap-4"
             @submit.prevent="submit"
         >
-            <p class="text-sm text-gray-600">
+            <p class="text-sm text-sbm-ink-soft">
                 Tell us what you need help with and our support team will reply by email.
             </p>
 
             <template v-if="requiresContact">
                 <div class="flex flex-col gap-1">
-                    <label for="sbm-support-email" class="text-xs font-semibold text-gray-700">
+                    <label for="sbm-support-email" class="text-xs font-semibold text-sbm-ink-soft">
                         Your email
                     </label>
                     <input
@@ -48,7 +46,7 @@
                         type="email"
                         autocomplete="email"
                         maxlength="255"
-                        class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 sbm-form-field placeholder:text-gray-400"
+                        class="w-full px-3 py-2 bg-sbm-surface text-sbm-ink rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 sbm-form-field placeholder:text-sbm-ink-muted"
                         placeholder="you@example.com"
                         :disabled="submitting"
                     />
@@ -58,8 +56,8 @@
                 </div>
 
                 <div class="flex flex-col gap-1">
-                    <label for="sbm-support-name" class="text-xs font-semibold text-gray-700">
-                        Your name <span class="font-normal text-gray-400">(optional)</span>
+                    <label for="sbm-support-name" class="text-xs font-semibold text-sbm-ink-soft">
+                        Your name <span class="font-normal text-sbm-ink-muted">(optional)</span>
                     </label>
                     <input
                         id="sbm-support-name"
@@ -67,7 +65,7 @@
                         type="text"
                         autocomplete="name"
                         maxlength="255"
-                        class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 sbm-form-field placeholder:text-gray-400"
+                        class="w-full px-3 py-2 bg-sbm-surface text-sbm-ink rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 sbm-form-field placeholder:text-sbm-ink-muted"
                         :disabled="submitting"
                     />
                     <p v-if="fieldError('name')" class="text-xs text-red-500">
@@ -77,7 +75,7 @@
             </template>
 
             <div class="flex flex-col gap-1">
-                <label for="sbm-support-subject" class="text-xs font-semibold text-gray-700">
+                <label for="sbm-support-subject" class="text-xs font-semibold text-sbm-ink-soft">
                     Subject
                 </label>
                 <input
@@ -85,7 +83,7 @@
                     v-model.trim="subject"
                     type="text"
                     maxlength="200"
-                    class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 sbm-form-field placeholder:text-gray-400"
+                    class="w-full px-3 py-2 bg-sbm-surface text-sbm-ink rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 sbm-form-field placeholder:text-sbm-ink-muted"
                     placeholder="A short summary"
                     :disabled="submitting"
                 />
@@ -95,7 +93,7 @@
             </div>
 
             <div class="flex flex-col gap-1">
-                <label for="sbm-support-body" class="text-xs font-semibold text-gray-700">
+                <label for="sbm-support-body" class="text-xs font-semibold text-sbm-ink-soft">
                     How can we help?
                 </label>
                 <textarea
@@ -103,7 +101,7 @@
                     v-model.trim="body"
                     rows="5"
                     maxlength="8000"
-                    class="w-full px-3 py-2 bg-white rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 resize-none sbm-form-field placeholder:text-gray-400"
+                    class="w-full px-3 py-2 bg-sbm-surface text-sbm-ink rounded-2xl shadow-sm border-none outline-none focus:outline-none focus:ring-0 resize-none sbm-form-field placeholder:text-sbm-ink-muted"
                     placeholder="Describe what you were doing and what went wrong"
                     :disabled="submitting"
                 ></textarea>
@@ -123,8 +121,7 @@
                 />
                 <button
                     type="button"
-                    class="self-start px-3 py-2 rounded-full text-white text-xs font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                    :style="{ backgroundColor: $store.state.config.mainColor }"
+                    class="self-start px-3 py-2 rounded-full bg-sbm-main text-sbm-on-main text-xs font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                     :disabled="submitting"
                     @click="fileInput?.click()"
                 >
@@ -137,7 +134,7 @@
                     <li
                         v-for="(file, i) in files"
                         :key="i"
-                        class="text-xs text-gray-600 truncate"
+                        class="text-xs text-sbm-ink-soft truncate"
                     >
                         {{ file.name }}
                     </li>
@@ -150,8 +147,7 @@
 
             <button
                 type="submit"
-                class="w-full py-2.5 rounded-full text-white text-sm font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                :style="{ backgroundColor: $store.state.config.mainColor }"
+                class="w-full py-2.5 rounded-full bg-sbm-main text-sbm-on-main text-sm font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 :disabled="submitting"
             >
                 {{ submitting ? 'Sending…' : 'Submit request' }}

@@ -1,6 +1,6 @@
 <template>
     <div
-        class="flex flex-col bg-gray-100 border-gray-200 p-0 h-dvh sbm-popup-chrome"
+        class="flex flex-col bg-sbm-page border-sbm-edge p-0 h-dvh sbm-popup-chrome"
     >
         <ChatHeader 
             @back="onBack"
@@ -14,11 +14,11 @@
                 id="home"
             >
                 <template #heading>
-                    <div class="-mt-px pt-8 pb-4 -mb-px" :style="{ backgroundColor: $store.state.config.mainColor }">
-                        <h1 class="text-lg font-bold text-white text-center mb-2">
+                    <div class="-mt-px pt-8 pb-4 -mb-px bg-sbm-main">
+                        <h1 class="text-lg font-bold text-sbm-on-main text-center mb-2">
                             Start a conversation
                         </h1>
-                        <p class="text-gray-200 text-sm text-center">
+                        <p class="text-sbm-on-main opacity-80 text-sm text-center">
                             What channel do you prefer?
                         </p>
                     </div>

@@ -15,11 +15,8 @@
             v-if="props.message.from !== 'visitor'" 
             class="flex-shrink-0 mt-1.5 mr-2"
         >
-            <div 
-                class="w-6 h-6 rounded-full flex items-center justify-center"
-                :style="{
-                    backgroundColor: store.state.config.mainColor,
-                }"
+            <div
+                class="w-6 h-6 rounded-full flex items-center justify-center bg-sbm-main"
             >
                 <img
                     v-if="avatar"
@@ -39,36 +36,32 @@
             class="py-2 text-sm"
         >
             <div class="flex items-center gap-2">
-                <div class="my-1 w-3 h-3 flex-shrink-0 rounded-full bg-black animate-pulse"></div>
+                <div class="my-1 w-3 h-3 flex-shrink-0 rounded-full bg-sbm-ink animate-pulse"></div>
                 <span
                     v-if="loading && store.state.activity"
-                    class="text-xs text-gray-500 animate-pulse"
+                    class="text-xs text-sbm-ink-muted animate-pulse"
                 >{{ store.state.activity }}&hellip;</span>
             </div>
         </div>
         <div
             v-else-if="props.message.from === 'chatbot'"
             :class="[
-                'message-text py-2 px-4 rounded-lg text-sm',
+                'message-text py-2 px-4 rounded-lg text-sm text-sbm-ink',
                 {
-                    'bg-gray-200': props.message.from === 'visitor',
-                    'bg-white': props.message.from !== 'visitor',
+                    'bg-sbm-surface-strong': props.message.from === 'visitor',
+                    'bg-sbm-surface': props.message.from !== 'visitor',
                 }
             ]"
-            :style="{
-                '--sbm-link-color': store.state.config.linkColor,
-                '--sbm-link-decoration': store.state.config.linkUnderline ? 'underline' : 'none',
-            }"
             @click="onMessageClick"
             v-html="props.message.text"
         ></div>
         <div 
             v-else
             :class="[
-                'message-text py-2 px-4 rounded-lg text-sm',
+                'message-text py-2 px-4 rounded-lg text-sm text-sbm-ink',
                 {
-                    'bg-gray-200': props.message.from === 'visitor',
-                    'bg-white': props.message.from !== 'visitor',
+                    'bg-sbm-surface-strong': props.message.from === 'visitor',
+                    'bg-sbm-surface': props.message.from !== 'visitor',
                 }
             ]"
         >

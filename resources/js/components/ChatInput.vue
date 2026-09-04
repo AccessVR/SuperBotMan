@@ -1,9 +1,9 @@
 <template>
-    <div class="relative bg-white rounded-3xl shadow-sm">
+    <div class="relative bg-sbm-surface rounded-3xl shadow-sm">
         <textarea
             ref="textarea"
             rows="1"
-            class="block w-full pl-4 pr-12 py-3 bg-transparent border-none outline-none focus:outline-none focus:ring-0 active:outline-none resize-none sbm-form-field leading-5 max-h-32 overflow-y-auto rounded-3xl placeholder:text-gray-400"
+            class="block w-full pl-4 pr-12 py-3 bg-transparent text-sbm-ink border-none outline-none focus:outline-none focus:ring-0 active:outline-none resize-none sbm-form-field leading-5 max-h-32 overflow-y-auto rounded-3xl placeholder:text-sbm-ink-muted"
             @input="onInput"
             @keydown="onKeyDown"
             :placeholder="$store.state.config.placeholderText"
@@ -11,8 +11,7 @@
         ></textarea>
         <button
             type="button"
-            class="absolute right-2 bottom-2 w-7 h-7 rounded-full text-white flex items-center justify-center transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-            :style="{ backgroundColor: $store.state.config.mainColor }"
+            class="absolute right-2 bottom-2 w-7 h-7 rounded-full bg-sbm-main text-sbm-on-main flex items-center justify-center transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             :disabled="!canSend"
             @click="onSubmit"
             title="Send (Ctrl/⌘+Enter)"

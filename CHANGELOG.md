@@ -2,6 +2,18 @@
 
 All notable changes to `super-botman` (formerly `botman-chat-sdk`) will be documented in this file.
 
+## [0.3.0] — Light and dark themes
+
+### Added
+
+- **The widget can now follow a host app's light/dark theme.** Every neutral in the UI (panel grounds, bubbles, inputs, text tones, borders) is a CSS custom property (`--sbm-*`) with built-in light and dark values; the new `theme` config picks between them — pinned (`'light'`/`'dark'`), following a dark class on the host `<html>` (`'class'`, Tailwind convention, live), or following the OS preference (`'media'`, live). The host script resolves the theme, boots the frames with it (`?theme=` on the frame URLs, so nothing paints in the wrong theme), and relays flips over the existing message bus.
+- **Host palettes.** The new `palette` config overrides any token per theme, so a host can restyle the widget to its own ramp without rebuilding. `mainColor` remains the header/action surface and is now themeable as the `main` token; text on those surfaces reads the `on-main` token.
+- `window.superbotmanChatWidget.theme('dark'|'light')` for hosts whose theme source none of the config modes can see.
+
+### Changed
+
+- Component markup now uses the `sbm-*` Tailwind color tokens instead of hardcoded grays; the light defaults reproduce the previous look exactly, so existing installs are unaffected until they opt into `theme`/`palette`.
+
 ## [0.2.2] — No zoom on focus
 
 ### Fixed

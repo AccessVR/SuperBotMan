@@ -11,12 +11,11 @@
             />
             <div
                 v-else-if="page?.icon"
-                class="rounded-full w-16 h-16 mb-6 flex items-center justify-center"
-                :style="{ backgroundColor: $store.state.config.mainColor }"
+                class="rounded-full w-16 h-16 mb-6 flex items-center justify-center bg-sbm-main"
             >
                 <span class="icon w-8 h-8" v-html="page.icon"></span>
             </div>
-            <h2 class="text-xl font-bold text-gray-900">
+            <h2 class="text-xl font-bold text-sbm-ink">
                 {{ page?.introMessage }}
             </h2>
         </div>

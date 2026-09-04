@@ -1,13 +1,18 @@
 import { createApp } from 'vue'
 import { createStore } from 'vuex'
 import Chat from './components/Chat.vue'
-import { client } from './utils'
+import { client, parentOrigin } from './utils'
 import { connectEcho } from './echo'
 import { seedDefaultPages, chatStoreOptions } from './store'
+import { createThemeApplier, resolveBootDark, followThemeMessages } from './theme'
 
 const app = createApp(Chat)
 
 const config = window.superbotmanWidget
+
+const applyTheme = createThemeApplier(config)
+applyTheme(resolveBootDark(config))
+followThemeMessages(applyTheme, parentOrigin())
 
 // Offsite embeds: keep the visitor's identity across page loads. The
 // frame GET mints a fresh token (and a fresh visitor id) every time —
