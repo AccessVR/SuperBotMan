@@ -96,7 +96,10 @@ html.sbm-dark {
             @apply mb-0;
         }
         pre {
-            @apply whitespace-pre-wrap;
+            @apply whitespace-pre-wrap mb-2;
+        }
+        pre:last-child {
+            @apply mb-0;
         }
         ol, ul {
             @apply mb-2;
